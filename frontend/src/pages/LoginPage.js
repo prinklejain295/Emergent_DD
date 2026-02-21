@@ -33,22 +33,38 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Image */}
-      <div 
-        className="hidden lg:block lg:w-1/2 bg-cover bg-center relative"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1620519157189-c06a79a52f99?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHw0fHxtaW5pbWFsaXN0JTIwYWJzdHJhY3QlMjBnZW9tZXRyaWMlMjBzaGFwZXMlMjBjYWxtJTIwYnVzaW5lc3MlMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzcxNjY4NzczfDA&ixlib=rb-4.1.0&q=85')`
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#064E3B]/90 to-[#047857]/80 flex items-center justify-center p-12">
-          <div className="text-white max-w-lg">
-            <h1 className="text-5xl font-bold mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              TaxFlow Zen
-            </h1>
-            <p className="text-xl leading-relaxed opacity-90">
-              Simplify tax compliance management. Automate reminders for your clients and never miss a deadline.
-            </p>
+    <div className="min-h-screen flex animate-fade-in">
+      {/* Left side - Brand */}
+      <div className="hidden lg:flex lg:w-1/2 bg-black items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+        <div className="text-white max-w-lg z-10 animate-slide-in">
+          <div className="mb-8">
+            <div className="w-16 h-16 bg-white rounded-xl mb-6 flex items-center justify-center text-black text-3xl font-bold">
+              D
+            </div>
+          </div>
+          <h1 className="text-6xl font-bold mb-6 tracking-tight">
+            DueDate
+          </h1>
+          <p className="text-xl leading-relaxed text-gray-300">
+            Never miss a compliance deadline. Automate reminders, collaborate with your team, and stay organized.
+          </p>
+          <div className="mt-12 space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-gray-400">Multi-user collaboration</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-gray-400">Automated email reminders</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-gray-400">Bulk client import</span>
+            </div>
           </div>
         </div>
       </div>
