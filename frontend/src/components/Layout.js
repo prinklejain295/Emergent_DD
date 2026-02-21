@@ -31,7 +31,7 @@ export default function Layout({ children, user, organization, onLogout }) {
           <p className="text-xs text-gray-500 mt-1">{user?.name}</p>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -40,39 +40,44 @@ export default function Layout({ children, user, organization, onLogout }) {
                 key={item.path}
                 to={item.path}
                 data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all font-medium ${
                   isActive
-                    ? 'bg-[#064E3B] text-white'
-                    : 'text-[#6B7280] hover:bg-[#F3F4F6]'
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-900'
                 }`}
               >
                 <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#E5E7EB]">
+        <div className="p-4 border-t border-gray-800">
           <button
             onClick={onLogout}
             data-testid="logout-button"
-            className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-[#6B7280] hover:bg-[#FEE2E2] hover:text-[#991B1B] transition-all"
+            className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-gray-400 hover:text-white hover:bg-red-900/20 transition-all font-medium"
           >
             <LogOut size={20} />
-            <span className="font-medium">Logout</span>
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#E5E7EB] flex items-center justify-between px-4 z-50">
-        <h1 className="text-xl font-bold text-[#064E3B]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          TaxFlow Zen
-        </h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-black flex items-center justify-between px-4 z-50">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black text-lg font-bold">
+            D
+          </div>
+          <h1 className="text-xl font-bold text-white">
+            DueDate
+          </h1>
+        </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-[#F3F4F6]"
+          className="p-2 rounded-lg hover:bg-gray-900 text-white"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
