@@ -70,29 +70,29 @@ export default function LoginPage({ onLogin }) {
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[#F5F5F4]">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h2 className="text-4xl font-bold text-[#064E3B] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md animate-scale-in">
+          <div className="mb-10">
+            <h2 className="text-4xl font-bold text-black mb-3">
               {isLogin ? 'Welcome Back' : 'Get Started'}
             </h2>
-            <p className="text-[#6B7280]">
-              {isLogin ? 'Sign in to manage your tax compliance' : 'Create your account to begin'}
+            <p className="text-gray-600 text-lg">
+              {isLogin ? 'Sign in to manage your compliance deadlines' : 'Create your account to begin'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
               <div>
                 <label className="label">Full Name</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User size={18} className="text-[#9CA3AF]" />
+                    <User size={20} className="text-gray-400" />
                   </div>
                   <input
                     type="text"
                     data-testid="name-input"
-                    className="input-field pl-10"
+                    className="input-field pl-11"
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -106,12 +106,12 @@ export default function LoginPage({ onLogin }) {
               <label className="label">Email Address</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-[#9CA3AF]" />
+                  <Mail size={20} className="text-gray-400" />
                 </div>
                 <input
                   type="email"
                   data-testid="email-input"
-                  className="input-field pl-10"
+                  className="input-field pl-11"
                   placeholder="your@email.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -124,12 +124,12 @@ export default function LoginPage({ onLogin }) {
               <label className="label">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={18} className="text-[#9CA3AF]" />
+                  <Lock size={20} className="text-gray-400" />
                 </div>
                 <input
                   type="password"
                   data-testid="password-input"
-                  className="input-field pl-10"
+                  className="input-field pl-11"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -141,19 +141,19 @@ export default function LoginPage({ onLogin }) {
             <button
               type="submit"
               data-testid="submit-button"
-              className="btn-primary w-full py-3 text-base"
+              className="btn-primary w-full py-3.5 text-base mt-2"
               disabled={loading}
             >
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-8 text-center">
             <button
               type="button"
               data-testid="toggle-auth-mode"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-[#064E3B] hover:underline font-medium"
+              className="text-black hover:text-gray-600 font-semibold transition-colors"
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
