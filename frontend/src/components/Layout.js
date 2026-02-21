@@ -85,8 +85,8 @@ export default function Layout({ children, user, organization, onLogout }) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-16 bg-white z-40 overflow-y-auto">
-          <nav className="p-4 space-y-2">
+        <div className="md:hidden fixed inset-0 top-16 bg-black z-40 overflow-y-auto animate-fade-in">
+          <nav className="p-4 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -95,14 +95,14 @@ export default function Layout({ children, user, organization, onLogout }) {
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all font-medium ${
                     isActive
-                      ? 'bg-[#064E3B] text-white'
-                      : 'text-[#6B7280] hover:bg-[#F3F4F6]'
+                      ? 'bg-white text-black'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-900'
                   }`}
                 >
                   <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -111,10 +111,10 @@ export default function Layout({ children, user, organization, onLogout }) {
                 setMobileMenuOpen(false);
                 onLogout();
               }}
-              className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-[#6B7280] hover:bg-[#FEE2E2] hover:text-[#991B1B] transition-all"
+              className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-gray-400 hover:text-white hover:bg-red-900/20 transition-all font-medium"
             >
               <LogOut size={20} />
-              <span className="font-medium">Logout</span>
+              <span>Logout</span>
             </button>
           </nav>
         </div>
