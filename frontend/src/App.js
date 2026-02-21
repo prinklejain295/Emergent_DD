@@ -76,7 +76,7 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                <Layout user={user} onLogout={handleLogout}>
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <Dashboard />
                 </Layout>
               ) : (
@@ -88,7 +88,7 @@ function App() {
             path="/clients"
             element={
               isAuthenticated ? (
-                <Layout user={user} onLogout={handleLogout}>
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <ClientsPage />
                 </Layout>
               ) : (
@@ -100,7 +100,7 @@ function App() {
             path="/due-dates"
             element={
               isAuthenticated ? (
-                <Layout user={user} onLogout={handleLogout}>
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <DueDatesPage />
                 </Layout>
               ) : (
@@ -112,7 +112,7 @@ function App() {
             path="/reminders"
             element={
               isAuthenticated ? (
-                <Layout user={user} onLogout={handleLogout}>
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <RemindersPage />
                 </Layout>
               ) : (
@@ -124,7 +124,7 @@ function App() {
             path="/calendar"
             element={
               isAuthenticated ? (
-                <Layout user={user} onLogout={handleLogout}>
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <CalendarPage />
                 </Layout>
               ) : (
