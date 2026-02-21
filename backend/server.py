@@ -267,6 +267,11 @@ async def check_and_send_reminders():
         logging.error(f"Error in reminder check: {str(e)}")
 
 # API Routes
+@api_router.get("/")
+async def root():
+    return {"message": "TaxFlow Zen API", "status": "running"}
+
+
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(user_data: UserRegister):
     # Check if user exists
