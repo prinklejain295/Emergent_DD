@@ -13,37 +13,46 @@ import './App.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+    const orgData = localStorage.getItem('organization');
     
     if (token && userData) {
       setIsAuthenticated(true);
       setUser(JSON.parse(userData));
+      if (orgData) {
+        setOrganization(JSON.parse(orgData));
+      }
     }
     setLoading(false);
   }, []);
 
-  const handleLogin = (token, userData) => {
+  const handleLogin = (token, userData, orgData) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('organization', JSON.stringify(orgData));
     setIsAuthenticated(true);
     setUser(userData);
+    setOrganization(orgData);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('organization');
     setIsAuthenticated(false);
     setUser(null);
+    setOrganization(null);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F5F5F4]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064E3B]"></div>
+      <div className="flex items-center justify-center min-h-screen bg-[#FAFAFA]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
       </div>
     );
   }
