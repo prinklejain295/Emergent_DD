@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X } from 'lucide-react';
 
-export default function Layout({ children, user, onLogout }) {
+export default function Layout({ children, user, organization, onLogout }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -15,14 +15,20 @@ export default function Layout({ children, user, onLogout }) {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F4]">
+    <div className="min-h-screen flex bg-[#FAFAFA]">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white/95 backdrop-blur-xl border-r border-[#E5E7EB] fixed left-0 top-0 h-screen flex-col z-40">
-        <div className="p-6 border-b border-[#E5E7EB]">
-          <h1 className="text-2xl font-bold text-[#064E3B]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            TaxFlow Zen
-          </h1>
-          <p className="text-sm text-[#6B7280] mt-1">{user?.name}</p>
+      <aside className="hidden md:flex w-64 bg-black fixed left-0 top-0 h-screen flex-col z-40 animate-slide-in">
+        <div className="p-6 border-b border-gray-800">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-black text-xl font-bold">
+              D
+            </div>
+            <h1 className="text-2xl font-bold text-white">
+              DueDate
+            </h1>
+          </div>
+          <p className="text-sm text-gray-400">{organization?.name || 'Loading...'}</p>
+          <p className="text-xs text-gray-500 mt-1">{user?.name}</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
