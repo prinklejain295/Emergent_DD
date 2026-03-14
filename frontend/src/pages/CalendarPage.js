@@ -197,10 +197,10 @@ export default function CalendarPage() {
                           {dd.status}
                         </span>
                       </div>
-                      <h3 className="text-lg font-semibold text-[#064E3B] mb-2">
+                      <h3 className="text-lg font-semibold text-black mb-2">
                         {getClientName(dd.client_id)}
                       </h3>
-                      <p className="text-sm text-[#6B7280]">{dd.description}</p>
+                      <p className="text-sm text-gray-600">{dd.description}</p>
                     </div>
                   </div>
                 </div>
