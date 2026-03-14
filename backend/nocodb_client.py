@@ -171,7 +171,7 @@ class NocoDBClient:
                 await self._request('DELETE', url, json={'Id': record_id})
                 count += 1
             except Exception as e:
-                logger.error(f\"Failed to delete record {record_id}: {e}\")
+                logger.error(f"Failed to delete record {record_id}: {e}")
         
         return {'deleted_count': count}
     
