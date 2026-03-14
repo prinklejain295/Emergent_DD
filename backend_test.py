@@ -1,361 +1,372 @@
 import requests
 import sys
 import json
+import io
 from datetime import datetime, timezone, timedelta
+from openpyxl import Workbook
 
-class TaxFlowAPITester:
+class DueDateAPITester:
     def __init__(self, base_url="https://client-tax-notify.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
+        self.organization_id = None
         self.client_id = None
+        self.custom_service_id = None
         self.due_date_id = None
-        self.reminder_id = None
         self.tests_run = 0
         self.tests_passed = 0
-        self.failed_tests = []
+        self.test_email = f"testorg{datetime.now().strftime('%H%M%S')}@duedate.com"
 
-    def log_result(self, test_name, success, response_data=None, error_msg=None):
+    def log_test(self, name, success, details=""):
         """Log test results"""
         self.tests_run += 1
         if success:
             self.tests_passed += 1
-            print(f"✅ {test_name} - PASSED")
+            print(f"✅ {name} - PASSED")
         else:
-            self.failed_tests.append({
-                'test': test_name,
-                'error': error_msg,
-                'response': response_data
-            })
-            print(f"❌ {test_name} - FAILED: {error_msg}")
+            print(f"❌ {name} - FAILED: {details}")
+        return success
 
-    def make_request(self, method, endpoint, data=None, expected_status=200):
+    def make_request(self, method, endpoint, data=None, files=None, expected_status=200):
         """Make HTTP request with proper headers"""
         url = f"{self.base_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
+        
         if self.token:
             headers['Authorization'] = f'Bearer {self.token}'
+        
+        if files:
+            headers.pop('Content-Type', None)  # Let requests set it for multipart
 
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, timeout=30)
+                response = requests.get(url, headers=headers)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=30)
+                if files:
+                    response = requests.post(url, files=files, headers=headers)
+                else:
+                    response = requests.post(url, json=data, headers=headers)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers, timeout=30)
-            elif method == 'PATCH':
-                response = requests.patch(url, json=data, headers=headers, timeout=30)
+                response = requests.put(url, json=data, headers=headers)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=headers, timeout=30)
+                response = requests.delete(url, headers=headers)
+            elif method == 'PATCH':
+                response = requests.patch(url, json=data, headers=headers)
 
             success = response.status_code == expected_status
-            response_data = {}
-            
-            try:
-                response_data = response.json()
-            except:
-                response_data = {"raw_response": response.text}
-
-            return success, response_data, response.status_code
+            return success, response.json() if response.content else {}, response.status_code
 
         except Exception as e:
             return False, {"error": str(e)}, 0
 
-    # Authentication Tests
-    def test_api_root(self):
-        """Test API root endpoint"""
-        success, response, status = self.make_request('GET', '', expected_status=200)
-        self.log_result("API Root", success, response, 
-                       f"Status: {status}" if not success else None)
-        return success
-
-    def test_user_registration(self):
-        """Test user registration"""
-        test_email = f"test_{datetime.now().strftime('%H%M%S')}@taxflow.com"
+    def test_1_register_with_organization(self):
+        """Test 1.1: Register with Organization"""
         data = {
-            "email": test_email,
+            "email": self.test_email,
             "password": "Test123!",
-            "name": "Test User"
+            "name": "Test Manager",
+            "organization_name": "Test Accounting Firm"
         }
         
-        success, response, status = self.make_request('POST', 'auth/register', data, 200)
+        success, response, status = self.make_request('POST', 'auth/register', data)
         
-        if success and 'access_token' in response and 'user' in response:
+        if success and 'access_token' in response:
             self.token = response['access_token']
             self.user_id = response['user']['id']
-            self.log_result("User Registration", True)
-            return True
+            self.organization_id = response['user']['organization_id']
+            return self.log_test("Register with Organization", True)
         else:
-            self.log_result("User Registration", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Register with Organization", False, f"Status: {status}, Response: {response}")
 
-    def test_user_login(self):
-        """Test user login with existing credentials"""
-        if not self.token:
-            return False
-            
-        # Get user email from token payload (we'll use the registered user)
+    def test_2_login(self):
+        """Test 1.2: Login"""
         data = {
-            "email": f"test_{datetime.now().strftime('%H%M%S')}@taxflow.com",
+            "email": self.test_email,
             "password": "Test123!"
         }
         
-        success, response, status = self.make_request('POST', 'auth/login', data, 200)
+        success, response, status = self.make_request('POST', 'auth/login', data)
         
         if success and 'access_token' in response:
-            self.log_result("User Login", True)
-            return True
+            self.token = response['access_token']
+            return self.log_test("Login", True)
         else:
-            self.log_result("User Login", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Login", False, f"Status: {status}, Response: {response}")
 
-    def test_get_current_user(self):
-        """Test get current user endpoint"""
-        success, response, status = self.make_request('GET', 'auth/me', expected_status=200)
+    def test_3_get_service_types(self):
+        """Test 2.1: Get All Service Types"""
+        success, response, status = self.make_request('GET', 'service-types')
         
-        if success and 'id' in response and 'email' in response:
-            self.log_result("Get Current User", True)
-            return True
+        if success and isinstance(response, dict):
+            # Check required categories
+            required_categories = ['federal', 'state', 'payroll', 'other', 'custom']
+            has_all_categories = all(cat in response for cat in required_categories)
+            
+            # Check federal types count (should be 15+)
+            federal_count = len(response.get('federal', []))
+            has_enough_federal = federal_count >= 15
+            
+            # Check for specific required forms
+            federal_types = response.get('federal', [])
+            required_forms = ['Form 941', 'W-2', '1099-NEC']
+            has_required_forms = any(any(form in ft for form in required_forms) for ft in federal_types)
+            
+            if has_all_categories and has_enough_federal and has_required_forms:
+                return self.log_test("Get All Service Types", True, f"Found {federal_count} federal types")
+            else:
+                return self.log_test("Get All Service Types", False, 
+                    f"Categories: {has_all_categories}, Federal count: {federal_count}, Required forms: {has_required_forms}")
         else:
-            self.log_result("Get Current User", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Get All Service Types", False, f"Status: {status}, Response: {response}")
 
-    # Client Management Tests
-    def test_create_client(self):
-        """Test client creation"""
+    def test_4_create_custom_service_type(self):
+        """Test 2.2: Create Custom Service Type"""
         data = {
-            "name": "ABC Corp",
-            "email": "abc@corp.com",
-            "phone": "1234567890",
-            "company": "ABC Corporation",
-            "notes": "Test client"
+            "name": "Business License Renewal - California",
+            "category": "custom"
         }
         
-        success, response, status = self.make_request('POST', 'clients', data, 200)
+        success, response, status = self.make_request('POST', 'service-types', data)
+        
+        if success and 'id' in response:
+            self.custom_service_id = response['id']
+            return self.log_test("Create Custom Service Type", True)
+        else:
+            return self.log_test("Create Custom Service Type", False, f"Status: {status}, Response: {response}")
+
+    def test_5_get_service_types_after_custom(self):
+        """Test 2.3: Get Service Types After Adding Custom"""
+        success, response, status = self.make_request('GET', 'service-types')
+        
+        if success and isinstance(response, dict):
+            custom_types = response.get('custom', [])
+            has_custom = "Business License Renewal - California" in custom_types
+            
+            if has_custom:
+                return self.log_test("Get Service Types After Adding Custom", True)
+            else:
+                return self.log_test("Get Service Types After Adding Custom", False, 
+                    f"Custom types: {custom_types}")
+        else:
+            return self.log_test("Get Service Types After Adding Custom", False, f"Status: {status}")
+
+    def test_6_create_individual_client(self):
+        """Test 3.1: Create Individual Client"""
+        data = {
+            "name": "Tech Startup Inc",
+            "email": "contact@techstartup.com",
+            "phone": "555-0123",
+            "company": "Tech Startup Inc",
+            "notes": "New tech company client"
+        }
+        
+        success, response, status = self.make_request('POST', 'clients', data)
         
         if success and 'id' in response:
             self.client_id = response['id']
-            self.log_result("Create Client", True)
-            return True
+            return self.log_test("Create Individual Client", True)
         else:
-            self.log_result("Create Client", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Create Individual Client", False, f"Status: {status}, Response: {response}")
 
-    def test_get_clients(self):
-        """Test get all clients"""
-        success, response, status = self.make_request('GET', 'clients', expected_status=200)
+    def test_7_excel_bulk_upload(self):
+        """Test 3.2: Excel Bulk Upload"""
+        # Create test Excel file
+        wb = Workbook()
+        ws = wb.active
+        
+        # Headers
+        ws['A1'] = 'Name'
+        ws['B1'] = 'Email'
+        ws['C1'] = 'Phone'
+        ws['D1'] = 'Company'
+        ws['E1'] = 'Notes'
+        
+        # Test data
+        test_clients = [
+            ['Client A', 'clienta@test.com', '555-1111', 'Company A', 'Notes A'],
+            ['Client B', 'clientb@test.com', '555-2222', 'Company B', 'Notes B'],
+            ['Client C', 'clientc@test.com', '555-3333', 'Company C', 'Notes C']
+        ]
+        
+        for i, client in enumerate(test_clients, start=2):
+            for j, value in enumerate(client, start=1):
+                ws.cell(row=i, column=j, value=value)
+        
+        # Save to bytes
+        excel_buffer = io.BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        files = {'file': ('test_clients.xlsx', excel_buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+        
+        success, response, status = self.make_request('POST', 'clients/upload-excel', files=files)
+        
+        if success and response.get('clients_created') == 3:
+            return self.log_test("Excel Bulk Upload", True, f"Created {response['clients_created']} clients")
+        else:
+            return self.log_test("Excel Bulk Upload", False, f"Status: {status}, Response: {response}")
+
+    def test_8_verify_bulk_import(self):
+        """Test 3.3: Verify Bulk Import"""
+        success, response, status = self.make_request('GET', 'clients')
         
         if success and isinstance(response, list):
-            self.log_result("Get All Clients", True)
-            return True
+            client_count = len(response)
+            # Should have 4 clients (1 manual + 3 bulk)
+            if client_count >= 4:
+                return self.log_test("Verify Bulk Import", True, f"Found {client_count} clients")
+            else:
+                return self.log_test("Verify Bulk Import", False, f"Expected 4+ clients, found {client_count}")
         else:
-            self.log_result("Get All Clients", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Verify Bulk Import", False, f"Status: {status}")
 
-    def test_update_client(self):
-        """Test client update"""
+    def test_9_create_due_date_federal_service(self):
+        """Test 4.1: Create Due Date with Federal Service"""
         if not self.client_id:
-            self.log_result("Update Client", False, None, "No client ID available")
-            return False
-            
-        data = {
-            "name": "ABC Corp Updated",
-            "email": "abc@corp.com",
-            "phone": "9876543210",
-            "company": "ABC Corporation",
-            "notes": "Updated notes"
-        }
+            return self.log_test("Create Due Date with Federal Service", False, "No client_id available")
         
-        success, response, status = self.make_request('PUT', f'clients/{self.client_id}', data, 200)
-        
-        if success and response.get('name') == 'ABC Corp Updated':
-            self.log_result("Update Client", True)
-            return True
-        else:
-            self.log_result("Update Client", False, response, f"Status: {status}")
-            return False
-
-    # Due Dates Management Tests
-    def test_create_due_date(self):
-        """Test due date creation"""
-        if not self.client_id:
-            self.log_result("Create Due Date", False, None, "No client ID available")
-            return False
-            
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         data = {
             "client_id": self.client_id,
-            "tax_type": "GST",
-            "description": "Monthly GST filing",
-            "due_date": future_date,
+            "service_type": "Form 941 - Quarterly Payroll Tax",
+            "description": "Q1 2026 Quarterly Payroll Tax Filing",
+            "due_date": "2026-04-30T00:00:00Z",
             "is_recurring": True,
-            "recurrence_frequency": "monthly"
+            "recurrence_frequency": "quarterly"
         }
         
-        success, response, status = self.make_request('POST', 'due-dates', data, 200)
+        success, response, status = self.make_request('POST', 'due-dates', data)
         
         if success and 'id' in response:
             self.due_date_id = response['id']
-            self.log_result("Create Due Date", True)
-            return True
+            return self.log_test("Create Due Date with Federal Service", True)
         else:
-            self.log_result("Create Due Date", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Create Due Date with Federal Service", False, f"Status: {status}, Response: {response}")
 
-    def test_get_due_dates(self):
-        """Test get all due dates"""
-        success, response, status = self.make_request('GET', 'due-dates', expected_status=200)
+    def test_10_create_due_date_custom_service(self):
+        """Test 4.2: Create Due Date with Custom Service"""
+        if not self.client_id:
+            return self.log_test("Create Due Date with Custom Service", False, "No client_id available")
         
-        if success and isinstance(response, list):
-            self.log_result("Get All Due Dates", True)
-            return True
-        else:
-            self.log_result("Get All Due Dates", False, response, f"Status: {status}")
-            return False
-
-    def test_update_due_date_status(self):
-        """Test due date status update"""
-        if not self.due_date_id:
-            self.log_result("Update Due Date Status", False, None, "No due date ID available")
-            return False
-            
-        success, response, status = self.make_request('PATCH', f'due-dates/{self.due_date_id}/status?status=completed', expected_status=200)
-        
-        if success and 'message' in response:
-            self.log_result("Update Due Date Status", True)
-            return True
-        else:
-            self.log_result("Update Due Date Status", False, response, f"Status: {status}")
-            return False
-
-    # Reminder Settings Tests
-    def test_create_reminder(self):
-        """Test reminder creation"""
         data = {
-            "days_before": 14,
-            "notification_time": "10:00"
+            "client_id": self.client_id,
+            "service_type": "Business License Renewal - California",
+            "description": "Annual business license renewal",
+            "due_date": "2026-12-31T00:00:00Z",
+            "is_recurring": True,
+            "recurrence_frequency": "annually"
         }
         
-        success, response, status = self.make_request('POST', 'reminders', data, 200)
+        success, response, status = self.make_request('POST', 'due-dates', data)
         
         if success and 'id' in response:
-            self.reminder_id = response['id']
-            self.log_result("Create Reminder", True)
-            return True
+            return self.log_test("Create Due Date with Custom Service", True)
         else:
-            self.log_result("Create Reminder", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Create Due Date with Custom Service", False, f"Status: {status}, Response: {response}")
 
-    def test_get_reminders(self):
-        """Test get all reminders"""
-        success, response, status = self.make_request('GET', 'reminders', expected_status=200)
+    def test_11_get_all_due_dates(self):
+        """Test 4.3: Get All Due Dates"""
+        success, response, status = self.make_request('GET', 'due-dates')
         
-        if success and isinstance(response, list) and len(response) >= 3:  # Should have default reminders
-            self.log_result("Get All Reminders", True)
-            return True
-        else:
-            self.log_result("Get All Reminders", False, response, f"Status: {status}")
-            return False
-
-    def test_toggle_reminder(self):
-        """Test reminder toggle"""
-        if not self.reminder_id:
-            self.log_result("Toggle Reminder", False, None, "No reminder ID available")
-            return False
+        if success and isinstance(response, list):
+            # Check that due dates use service_type field (not tax_type)
+            has_service_type = all('service_type' in dd for dd in response)
+            no_tax_type = all('tax_type' not in dd for dd in response)
             
-        success, response, status = self.make_request('PATCH', f'reminders/{self.reminder_id}/toggle', expected_status=200)
-        
-        if success and 'is_active' in response:
-            self.log_result("Toggle Reminder", True)
-            return True
+            if has_service_type and no_tax_type and len(response) >= 2:
+                return self.log_test("Get All Due Dates", True, f"Found {len(response)} due dates with service_type")
+            else:
+                return self.log_test("Get All Due Dates", False, 
+                    f"service_type: {has_service_type}, no tax_type: {no_tax_type}, count: {len(response)}")
         else:
-            self.log_result("Toggle Reminder", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Get All Due Dates", False, f"Status: {status}")
 
-    # Dashboard Tests
-    def test_dashboard_stats(self):
-        """Test dashboard statistics"""
-        success, response, status = self.make_request('GET', 'dashboard/stats', expected_status=200)
+    def test_12_dashboard_stats(self):
+        """Test 5: Dashboard Stats"""
+        success, response, status = self.make_request('GET', 'dashboard/stats')
         
-        expected_keys = ['total_clients', 'total_due_dates', 'upcoming_count', 'overdue_count', 'upcoming_due_dates']
-        if success and all(key in response for key in expected_keys):
-            self.log_result("Dashboard Stats", True)
-            return True
-        else:
-            self.log_result("Dashboard Stats", False, response, f"Status: {status}")
-            return False
-
-    # Cleanup Tests
-    def test_delete_due_date(self):
-        """Test due date deletion"""
-        if not self.due_date_id:
-            return True  # Skip if no due date to delete
+        if success and isinstance(response, dict):
+            required_fields = ['total_clients', 'total_due_dates', 'upcoming_count', 'overdue_count', 'upcoming_due_dates']
+            has_all_fields = all(field in response for field in required_fields)
             
-        success, response, status = self.make_request('DELETE', f'due-dates/{self.due_date_id}', expected_status=200)
+            # Check upcoming_due_dates use service_type
+            upcoming = response.get('upcoming_due_dates', [])
+            has_service_type = all('service_type' in dd for dd in upcoming)
+            
+            if has_all_fields and has_service_type:
+                return self.log_test("Dashboard Stats", True, 
+                    f"Clients: {response['total_clients']}, Due dates: {response['total_due_dates']}")
+            else:
+                return self.log_test("Dashboard Stats", False, 
+                    f"Fields: {has_all_fields}, service_type in upcoming: {has_service_type}")
+        else:
+            return self.log_test("Dashboard Stats", False, f"Status: {status}")
+
+    def test_13_delete_custom_service_type(self):
+        """Test 2.4: Delete Custom Service Type"""
+        if not self.custom_service_id:
+            return self.log_test("Delete Custom Service Type", False, "No custom_service_id available")
+        
+        success, response, status = self.make_request('DELETE', f'service-types/{self.custom_service_id}')
         
         if success:
-            self.log_result("Delete Due Date", True)
-            return True
+            return self.log_test("Delete Custom Service Type", True)
         else:
-            self.log_result("Delete Due Date", False, response, f"Status: {status}")
-            return False
-
-    def test_delete_client(self):
-        """Test client deletion"""
-        if not self.client_id:
-            return True  # Skip if no client to delete
-            
-        success, response, status = self.make_request('DELETE', f'clients/{self.client_id}', expected_status=200)
-        
-        if success:
-            self.log_result("Delete Client", True)
-            return True
-        else:
-            self.log_result("Delete Client", False, response, f"Status: {status}")
-            return False
+            return self.log_test("Delete Custom Service Type", False, f"Status: {status}, Response: {response}")
 
     def run_all_tests(self):
-        """Run all API tests in sequence"""
-        print("🚀 Starting TaxFlow Zen API Tests...")
-        print(f"📍 Base URL: {self.base_url}")
-        print("=" * 60)
-
-        # Test sequence
-        tests = [
-            self.test_api_root,
-            self.test_user_registration,
-            self.test_get_current_user,
-            self.test_create_client,
-            self.test_get_clients,
-            self.test_update_client,
-            self.test_create_due_date,
-            self.test_get_due_dates,
-            self.test_update_due_date_status,
-            self.test_create_reminder,
-            self.test_get_reminders,
-            self.test_toggle_reminder,
-            self.test_dashboard_stats,
-            self.test_delete_due_date,
-            self.test_delete_client
-        ]
-
-        for test in tests:
-            test()
-            print()
-
-        # Print summary
-        print("=" * 60)
-        print(f"📊 Test Results: {self.tests_passed}/{self.tests_run} passed")
+        """Run all backend API tests"""
+        print("🚀 Starting DueDate Backend API Tests")
+        print("=" * 50)
         
-        if self.failed_tests:
-            print("\n❌ Failed Tests:")
-            for failure in self.failed_tests:
-                print(f"  • {failure['test']}: {failure['error']}")
+        # Authentication Tests
+        print("\n📋 Authentication & Organization Tests")
+        self.test_1_register_with_organization()
+        self.test_2_login()
         
-        return self.tests_passed == self.tests_run
+        # Service Types Tests
+        print("\n🏷️  Service Types Tests (NEW FEATURE)")
+        self.test_3_get_service_types()
+        self.test_4_create_custom_service_type()
+        self.test_5_get_service_types_after_custom()
+        
+        # Client Management Tests
+        print("\n👥 Client Management Tests")
+        self.test_6_create_individual_client()
+        self.test_7_excel_bulk_upload()
+        self.test_8_verify_bulk_import()
+        
+        # Due Dates Tests
+        print("\n📅 Due Dates with Service Types Tests")
+        self.test_9_create_due_date_federal_service()
+        self.test_10_create_due_date_custom_service()
+        self.test_11_get_all_due_dates()
+        
+        # Dashboard Tests
+        print("\n📊 Dashboard Tests")
+        self.test_12_dashboard_stats()
+        
+        # Cleanup Tests
+        print("\n🧹 Cleanup Tests")
+        self.test_13_delete_custom_service_type()
+        
+        # Final Results
+        print("\n" + "=" * 50)
+        print(f"📊 BACKEND TEST RESULTS")
+        print(f"Tests Run: {self.tests_run}")
+        print(f"Tests Passed: {self.tests_passed}")
+        print(f"Tests Failed: {self.tests_run - self.tests_passed}")
+        print(f"Success Rate: {(self.tests_passed/self.tests_run)*100:.1f}%")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 ALL BACKEND TESTS PASSED!")
+            return True
+        else:
+            print("⚠️  SOME BACKEND TESTS FAILED!")
+            return False
 
 def main():
-    tester = TaxFlowAPITester()
+    tester = DueDateAPITester()
     success = tester.run_all_tests()
     return 0 if success else 1
 
