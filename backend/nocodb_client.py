@@ -131,9 +131,9 @@ class NocoDBClient:
         return record
     
     async def update_one(self, table_key: str, record_id: Any, data: Dict) -> Dict:
-        \"\"\"Update a record by ID\"\"\"
+        """Update a record by ID"""
         table_id = self.tables.get(table_key)
-        url = f\"{self.base_url}/api/v2/tables/{table_id}/records\"
+        url = f"{self.base_url}/api/v2/tables/{table_id}/records"
         
         prepared_data = self._prepare_record(data)
         prepared_data['Id'] = record_id
