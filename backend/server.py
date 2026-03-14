@@ -179,9 +179,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
         
         return User(**user_doc)
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
+    except (InvalidTokenError, Exception):
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
 async def send_email_notification(to_email: str, subject: str, content: str):
