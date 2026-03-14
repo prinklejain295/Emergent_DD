@@ -150,7 +150,7 @@ export default function CalendarPage() {
                         key={dd.id}
                         className="text-xs px-2 py-1 bg-[#D1FAE5] text-[#064E3B] rounded truncate"
                       >
-                        {dd.tax_type}
+                        {dd.service_type}
                       </div>
                     ))}
                     {dayDueDates.length > 2 && (
