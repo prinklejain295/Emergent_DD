@@ -109,7 +109,7 @@ export default function Dashboard() {
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <span className="badge badge-pending">{dueDate.tax_type}</span>
+                    <span className="badge badge-pending">{dueDate.service_type}</span>
                     <h3 className="font-semibold text-[#064E3B]">{dueDate.client?.name}</h3>
                   </div>
                   <p className="text-sm text-[#6B7280]">{dueDate.description}</p>
