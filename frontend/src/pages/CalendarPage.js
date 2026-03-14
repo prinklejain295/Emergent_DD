@@ -148,7 +148,7 @@ export default function CalendarPage() {
                     {dayDueDates.slice(0, 2).map(dd => (
                       <div
                         key={dd.id}
-                        className="text-xs px-2 py-1 bg-[#D1FAE5] text-[#064E3B] rounded truncate"
+                        className="text-xs px-2 py-1 bg-gray-100 text-black rounded truncate font-medium"
                       >
                         {dd.service_type}
                       </div>
