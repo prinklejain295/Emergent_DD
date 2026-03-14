@@ -149,7 +149,7 @@ class NocoDBClient:
         
         record_id = record.get('Id') or record.get('id')
         table_id = self.tables.get(table_key)
-        url = f\"{self.base_url}/api/v2/tables/{table_id}/records\"
+        url = f"{self.base_url}/api/v2/tables/{table_id}/records"
         
         await self._request('DELETE', url, json={'Id': record_id})
         return {'deleted_count': 1}
@@ -162,7 +162,7 @@ class NocoDBClient:
             return {'deleted_count': 0}
         
         table_id = self.tables.get(table_key)
-        url = f\"{self.base_url}/api/v2/tables/{table_id}/records\"
+        url = f"{self.base_url}/api/v2/tables/{table_id}/records"
         
         count = 0
         for record in records:
@@ -187,7 +187,7 @@ class NocoDBClient:
                 if isinstance(value, dict):
                     for op, op_value in value.items():
                         if op == '$gte':
-                            where_parts.append(f\"({key},ge,{op_value})\")
+                            where_parts.append(f"({key},ge,{op_value})")
                         elif op == '$lte':
                             where_parts.append(f"({key},le,{op_value})")
                         elif op == '$lt':
