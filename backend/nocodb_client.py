@@ -176,7 +176,7 @@ class NocoDBClient:
         return {'deleted_count': count}
     
     async def count_documents(self, table_key: str, filters: Optional[Dict] = None) -> int:
-        \"\"\"Count documents matching filters\"\"\"
+        """Count documents matching filters"""
         url = self._get_table_url(table_key)
         
         params = {'limit': 1, 'offset': 0}
