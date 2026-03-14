@@ -189,11 +189,11 @@ class NocoDBClient:
                         if op == '$gte':
                             where_parts.append(f\"({key},ge,{op_value})\")
                         elif op == '$lte':
-                            where_parts.append(f\"({key},le,{op_value})\")
+                            where_parts.append(f"({key},le,{op_value})")
                         elif op == '$lt':
                             where_parts.append(f"({key},lt,{op_value})")
                 else:
-                    where_parts.append(f\"({key},eq,{value})\")
+                    where_parts.append(f"({key},eq,{value})")
             
             if where_parts:
                 params['where'] = '~and'.join(where_parts)
