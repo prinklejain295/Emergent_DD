@@ -142,7 +142,7 @@ class NocoDBClient:
         return response
     
     async def delete_one(self, table_key: str, filters: Dict) -> Dict:
-        \"\"\"Delete one record\"\"\"
+        """Delete one record"""
         record = await self.find_one(table_key, filters)
         if not record:
             return {'deleted_count': 0}
