@@ -155,7 +155,7 @@ class NocoDBClient:
         return {'deleted_count': 1}
     
     async def delete_many(self, table_key: str, filters: Dict) -> Dict:
-        \"\"\"Delete multiple records\"\"\"
+        """Delete multiple records"""
         records = await self.find(table_key, filters, limit=1000)
         
         if not records:
