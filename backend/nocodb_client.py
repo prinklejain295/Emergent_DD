@@ -113,7 +113,7 @@ class NocoDBClient:
     
     async def find_one_and_update(self, table_key: str, filters: Dict, update: Dict, 
                                    return_document: bool = True) -> Optional[Dict]:
-        \"\"\"Find and update a record\"\"\"
+        """Find and update a record"""
         # First find the record
         record = await self.find_one(table_key, filters)
         if not record:
