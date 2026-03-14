@@ -234,17 +234,17 @@ async def check_and_send_reminders():
                 org = await db.organizations.find_one({"id": due_date['organization_id']}, {"_id": 0})
                 
                 if client and org:
-                    client_subject = f"Compliance Reminder: {due_date['tax_type']} Due Soon"
+                    client_subject = f"Compliance Reminder: {due_date['service_type']} Due Soon"
                     client_content = f"""
                     <html>
                         <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
                             <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;">
                                 <h2 style="color: #000000; margin-bottom: 20px;">Compliance Reminder</h2>
                                 <p>Dear {client['name']},</p>
-                                <p>This is a reminder that your <strong>{due_date['tax_type']}</strong> compliance is due on <strong>{datetime.fromisoformat(due_date['due_date']).strftime('%B %d, %Y')}</strong>.</p>
+                                <p>This is a reminder that your <strong>{due_date['service_type']}</strong> compliance is due on <strong>{datetime.fromisoformat(due_date['due_date']).strftime('%B %d, %Y')}</strong>.</p>
                                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                     <h3 style="margin: 0 0 15px 0; color: #000000;">Details:</h3>
-                                    <p style="margin: 10px 0;"><strong>Tax Type:</strong> {due_date['tax_type']}</p>
+                                    <p style="margin: 10px 0;"><strong>Service Type:</strong> {due_date['service_type']}</p>
                                     <p style="margin: 10px 0;"><strong>Description:</strong> {due_date['description']}</p>
                                     <p style="margin: 10px 0;"><strong>Due Date:</strong> {datetime.fromisoformat(due_date['due_date']).strftime('%B %d, %Y')}</p>
                                 </div>
@@ -260,7 +260,7 @@ async def check_and_send_reminders():
                         due_date_id=due_date['id'],
                         recipient_email=client['email'],
                         status="sent",
-                        message=f"Reminder sent for {due_date['tax_type']}"
+                        message=f"Reminder sent for {due_date['service_type']}"
                     )
                     log_dict = log.model_dump()
                     log_dict['sent_at'] = log_dict['sent_at'].isoformat()
