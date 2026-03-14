@@ -145,20 +145,42 @@ export default function ClientsPage() {
   }
 
   return (
-    <div data-testid="clients-page">
+    <div data-testid="clients-page" className="animate-fade-in">
       <div className="page-header flex items-center justify-between">
         <div>
           <h1 className="page-title">Clients</h1>
           <p className="page-description">Manage your client information</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          data-testid="add-client-button"
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus size={18} />
-          <span>Add Client</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={downloadTemplate}
+            className="btn-outline flex items-center space-x-2"
+            title="Download Excel template"
+          >
+            <Download size={18} />
+            <span className="hidden sm:inline">Template</span>
+          </button>
+          <label className={`btn-secondary flex items-center space-x-2 cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
+            <Upload size={18} />
+            <span className="hidden sm:inline">{uploading ? 'Uploading...' : 'Import Excel'}</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleExcelUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
+          <button
+            onClick={() => setShowModal(true)}
+            data-testid="add-client-button"
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Plus size={18} />
+            <span>Add Client</span>
+          </button>
+        </div>
       </div>
 
       {clients.length === 0 ? (
