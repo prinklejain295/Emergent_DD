@@ -81,6 +81,56 @@ export default function ClientsPage() {
     }
   };
 
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please upload an Excel file (.xlsx or .xls)');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`${API}/clients/upload-excel`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      toast.success(response.data.message);
+      if (response.data.errors && response.data.errors.length > 0) {
+        console.warn('Upload errors:', response.data.errors);
+        toast.warning(`Some rows had errors. Check console for details.`);
+      }
+      fetchClients();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload file');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = `Name,Email,Phone,Company,Notes\nJohn Doe,john@example.com,123-456-7890,Acme Corp,Sample client\nJane Smith,jane@example.com,098-765-4321,Tech Inc,Another sample`;
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'clients_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const resetForm = () => {
     setFormData({ name: '', email: '', phone: '', company: '', notes: '' });
     setEditingClient(null);
