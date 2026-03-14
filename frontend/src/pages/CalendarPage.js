@@ -192,7 +192,7 @@ export default function CalendarPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className="badge badge-pending">{dd.tax_type}</span>
+                        <span className="badge badge-pending">{dd.service_type}</span>
                         <span className={`badge ${dd.status === 'completed' ? 'badge-completed' : 'badge-pending'}`}>
                           {dd.status}
                         </span>
