@@ -72,7 +72,7 @@ class NocoDBClient:
     
     async def find(self, table_key: str, filters: Optional[Dict] = None, 
                    limit: int = 25, offset: int = 0, sort: Optional[str] = None) -> List[Dict]:
-        \"\"\"Find multiple records\"\"\"
+        """Find multiple records"""
         url = self._get_table_url(table_key)
         
         params = {
