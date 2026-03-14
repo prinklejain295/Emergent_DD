@@ -592,43 +592,117 @@ async def get_notification_logs(current_user: User = Depends(get_current_user)):
     
     return logs
 
-# Tax Types
-@api_router.get("/tax-types")
-async def get_tax_types():
-    return {
+# Service Types
+@api_router.get("/service-types")
+async def get_service_types(current_user: User = Depends(get_current_user)):
+    """Get all service types including default and custom ones for the organization"""
+    default_types = {
         "federal": [
             "Form 1040 - Individual Income Tax",
             "Form 1120 - Corporate Income Tax",
             "Form 1065 - Partnership Return",
+            "Form 1120-S - S Corporation Tax Return",
             "Form 941 - Quarterly Payroll Tax",
-            "Form 940 - Annual Federal Unemployment Tax",
+            "Form 940 - Annual Federal Unemployment Tax (FUTA)",
             "Form W-2 - Wage and Tax Statement",
+            "Form W-3 - Transmittal of Wage Statements",
             "Form 1099-NEC - Nonemployee Compensation",
             "Form 1099-MISC - Miscellaneous Income",
+            "Form 1099-INT - Interest Income",
+            "Form 1099-DIV - Dividend Income",
             "Form 990 - Tax-Exempt Organization Return",
-            "Estimated Tax Payments (Quarterly)"
+            "Form 5500 - Annual Return/Report of Employee Benefit Plan",
+            "Estimated Tax Payments - Quarterly (Form 1040-ES)",
+            "Corporate Estimated Tax - Quarterly (Form 1120-W)"
         ],
         "payroll": [
             "Federal Payroll Tax Deposit",
             "FICA Tax (Social Security & Medicare)",
-            "Federal Unemployment Tax (FUTA)",
+            "Federal Income Tax Withholding",
+            "Federal Unemployment Tax (FUTA) - Form 940",
             "State Unemployment Insurance (SUI)",
+            "State Disability Insurance (SDI)",
             "Workers' Compensation Premium",
-            "Employee Benefits Filing"
+            "Employee Benefits Filing - Form 5500",
+            "New Hire Reporting",
+            "Payroll Tax Reconciliation"
         ],
         "state": [
             "State Income Tax Return",
-            "State Sales Tax",
+            "State Sales and Use Tax",
             "State Franchise Tax",
-            "State Payroll Tax"
+            "State Payroll Withholding Tax",
+            "State Unemployment Tax",
+            "Business License Renewal",
+            "Annual Report Filing",
+            "Property Tax Return"
         ],
         "other": [
             "Excise Tax",
             "Estate Tax",
             "Gift Tax",
-            "Property Tax"
+            "Property Tax",
+            "Business License",
+            "Professional License Renewal",
+            "Insurance Premium Payment",
+            "Audit Response Deadline"
         ]
     }
+    
+    # Get custom service types for this organization
+    custom_types = await db.service_types.find(
+        {"organization_id": current_user.organization_id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    custom_list = [st['name'] for st in custom_types]
+    
+    return {
+        **default_types,
+        "custom": custom_list
+    }
+
+@api_router.post("/service-types")
+async def create_service_type(
+    service_type_data: ServiceTypeCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a custom service type"""
+    # Check if already exists
+    existing = await db.service_types.find_one({
+        "organization_id": current_user.organization_id,
+        "name": service_type_data.name
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Service type already exists")
+    
+    service_type = ServiceType(
+        organization_id=current_user.organization_id,
+        name=service_type_data.name,
+        category=service_type_data.category
+    )
+    service_type_dict = service_type.model_dump()
+    service_type_dict['created_at'] = service_type_dict['created_at'].isoformat()
+    await db.service_types.insert_one(service_type_dict)
+    
+    return service_type
+
+@api_router.delete("/service-types/{service_type_id}")
+async def delete_service_type(
+    service_type_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a custom service type"""
+    result = await db.service_types.delete_one({
+        "id": service_type_id,
+        "organization_id": current_user.organization_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Service type not found")
+    
+    return {"message": "Service type deleted successfully"}
 
 app.include_router(api_router)
 
