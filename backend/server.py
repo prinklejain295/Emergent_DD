@@ -96,7 +96,7 @@ class Client(BaseModel):
 
 class DueDateCreate(BaseModel):
     client_id: str
-    tax_type: str
+    service_type: str
     description: str
     due_date: datetime
     is_recurring: bool = False
@@ -107,12 +107,24 @@ class DueDate(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     organization_id: str
     client_id: str
-    tax_type: str
+    service_type: str
     description: str
     due_date: datetime
     is_recurring: bool = False
     recurrence_frequency: Optional[str] = None
     status: str = "pending"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ServiceTypeCreate(BaseModel):
+    name: str
+    category: str  # federal, state, payroll, custom
+
+class ServiceType(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
+    name: str
+    category: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ReminderSettingCreate(BaseModel):
