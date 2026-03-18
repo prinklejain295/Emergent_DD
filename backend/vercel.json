@@ -1,11 +1,6 @@
 {
-  "buildCommand": "cd backend && pip install -r requirements.txt",
-  "outputDirectory": "backend",
-  "framework": null,
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
-  ]
+    {"source": "/api/(.*)", "destination": "/api/index"}
+  ],
+  "framework": null
 }
