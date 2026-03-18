@@ -43,11 +43,13 @@ NOCODB_API_TOKEN = os.environ.get('NOCODB_API_TOKEN', '')
 NOCODB_BASE_ID = os.environ.get('NOCODB_BASE_ID', '')
 
 # Table IDs
-TABLE_ORGANIZATIONS = os.environ.get('NOCODB_TABLE_ORGANIZATIONS', '')
-TABLE_USERS = os.environ.get('NOCODB_TABLE_USERS', '')
-TABLE_CLIENTS = os.environ.get('NOCODB_TABLE_CLIENTS', '')
-TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
-TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
+NOCODB_NOCODB_TABLE_ORGANIZATIONS = os.environ.get('NOCODB_NOCODB_TABLE_ORGANIZATIONS', '')
+NOCODB_NOCODB_TABLE_USERS = os.environ.get('NOCODB_NOCODB_TABLE_USERS', '')
+NOCODB_NOCODB_TABLE_CLIENTS = os.environ.get('NOCODB_NOCODB_TABLE_CLIENTS', '')
+NOCODB_NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_NOCODB_TABLE_DUEDATES', '')
+NOCODB_NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_NOCODB_TABLE_SERVICETYPES', '')
+NOCODB_NOCODB_TABLE_REMINDERSETTINGS = os.environ.get('NOCODB_NOCODB_TABLE_REMINDERSETTINGS', '')
+NOCODB_NOCODB_TABLE_NOTIFICATIONLOGS = os.environ.get('NOCODB_NOCODB_TABLE_NOTIFICATIONLOGS', '')
 
 # Default service types
 DEFAULT_SERVICE_TYPES = {
@@ -185,8 +187,8 @@ async def register(data: UserRegister):
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
-        if TABLE_ORGANIZATIONS:
-            await nocodb_post(f"/api/v2/tables/{TABLE_ORGANIZATIONS}/records", org_data)
+        if NOCODB_TABLE_ORGANIZATIONS:
+            await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_ORGANIZATIONS}/records", org_data)
         else:
             # Store in memory if NocoDB not configured
             pass
@@ -204,8 +206,8 @@ async def register(data: UserRegister):
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
-        if TABLE_USERS:
-            await nocodb_post(f"/api/v2/tables/{TABLE_USERS}/records", user_data)
+        if NOCODB_TABLE_USERS:
+            await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", user_data)
         
         # Generate token
         token = create_jwt_token({
@@ -236,9 +238,9 @@ async def register(data: UserRegister):
 async def login(data: UserLogin):
     try:
         # Find user in NocoDB
-        if TABLE_USERS:
+        if NOCODB_TABLE_USERS:
             result = await nocodb_get(
-                f"/api/v2/tables/{TABLE_USERS}/records",
+                f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
                 params={"where": f"(email,eq,{data.email})", "limit": 1}
             )
             
@@ -298,18 +300,18 @@ async def get_dashboard_stats(authorization: str = Header(None)):
     thirty_days = now + timedelta(days=30)
     
     # Get clients count
-    if TABLE_CLIENTS and org_id:
+    if NOCODB_TABLE_CLIENTS and org_id:
         result = await nocodb_get(
-            f"/api/v2/tables/{TABLE_CLIENTS}/records",
+            f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
             params={"where": f"(organization_id,eq,{org_id})", "limit": 1000}
         )
         if result:
             stats["total_clients"] = len(result.get('list', []))
     
     # Get due dates
-    if TABLE_DUEDATES and org_id:
+    if NOCODB_TABLE_DUEDATES and org_id:
         result = await nocodb_get(
-            f"/api/v2/tables/{TABLE_DUEDATES}/records",
+            f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records",
             params={"where": f"(organization_id,eq,{org_id})", "limit": 1000}
         )
         if result:
@@ -325,9 +327,9 @@ async def get_dashboard_stats(authorization: str = Header(None)):
                     stats["upcoming_count"] += 1
                     # Enrich with client info
                     dd['client'] = None
-                    if TABLE_CLIENTS:
+                    if NOCODB_TABLE_CLIENTS:
                         client_result = await nocodb_get(
-                            f"/api/v2/tables/{TABLE_CLIENTS}/records",
+                            f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
                             params={"where": f"(id,eq,{dd.get('client_id')})", "limit": 1}
                         )
                         if client_result and client_result.get('list'):
@@ -342,9 +344,9 @@ async def get_clients(authorization: str = Header(None)):
     user = await get_current_user(authorization)
     org_id = user.get("organization_id")
     
-    if TABLE_CLIENTS and org_id:
+    if NOCODB_TABLE_CLIENTS and org_id:
         result = await nocodb_get(
-            f"/api/v2/tables/{TABLE_CLIENTS}/records",
+            f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
             params={"where": f"(organization_id,eq,{org_id})", "limit": 1000}
         )
         return result.get('list', []) if result else []
@@ -367,8 +369,8 @@ async def create_client(data: ClientCreate, authorization: str = Header(None)):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    if TABLE_CLIENTS:
-        result = await nocodb_post(f"/api/v2/tables/{TABLE_CLIENTS}/records", client_data)
+    if NOCODB_TABLE_CLIENTS:
+        result = await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", client_data)
         if result:
             return {"id": client_id, **data.model_dump()}
     
@@ -388,8 +390,8 @@ async def update_client(client_id: str, data: ClientCreate, authorization: str =
         "notes": data.notes
     }
     
-    if TABLE_CLIENTS:
-        await nocodb_patch(f"/api/v2/tables/{TABLE_CLIENTS}/records", update_data)
+    if NOCODB_TABLE_CLIENTS:
+        await nocodb_patch(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", update_data)
     
     return {"id": client_id, **data.model_dump()}
 
@@ -397,8 +399,8 @@ async def update_client(client_id: str, data: ClientCreate, authorization: str =
 async def delete_client(client_id: str, authorization: str = Header(None)):
     user = await get_current_user(authorization)
     
-    if TABLE_CLIENTS:
-        await nocodb_delete(f"/api/v2/tables/{TABLE_CLIENTS}/records", {"Id": client_id})
+    if NOCODB_TABLE_CLIENTS:
+        await nocodb_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {"Id": client_id})
     
     return {"message": "Client deleted"}
 
@@ -446,8 +448,8 @@ async def upload_clients_excel(file: UploadFile = File(...), authorization: str 
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 
-                if TABLE_CLIENTS:
-                    await nocodb_post(f"/api/v2/tables/{TABLE_CLIENTS}/records", client_data)
+                if NOCODB_TABLE_CLIENTS:
+                    await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", client_data)
                 
                 imported += 1
             except Exception as e:
@@ -470,9 +472,9 @@ async def get_service_types(authorization: str = Header(None)):
     service_types = {k: v.copy() for k, v in DEFAULT_SERVICE_TYPES.items()}
     
     # Get custom service types from NocoDB
-    if TABLE_SERVICETYPES and org_id:
+    if NOCODB_TABLE_SERVICETYPES and org_id:
         result = await nocodb_get(
-            f"/api/v2/tables/{TABLE_SERVICETYPES}/records",
+            f"/api/v2/tables/{NOCODB_TABLE_SERVICETYPES}/records",
             params={"where": f"(organization_id,eq,{org_id})", "limit": 1000}
         )
         if result:
@@ -499,8 +501,8 @@ async def create_service_type(data: ServiceTypeCreate, authorization: str = Head
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    if TABLE_SERVICETYPES:
-        await nocodb_post(f"/api/v2/tables/{TABLE_SERVICETYPES}/records", st_data)
+    if NOCODB_TABLE_SERVICETYPES:
+        await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_SERVICETYPES}/records", st_data)
     
     return {"id": st_id, **data.model_dump()}
 
@@ -510,9 +512,9 @@ async def get_due_dates(authorization: str = Header(None)):
     user = await get_current_user(authorization)
     org_id = user.get("organization_id")
     
-    if TABLE_DUEDATES and org_id:
+    if NOCODB_TABLE_DUEDATES and org_id:
         result = await nocodb_get(
-            f"/api/v2/tables/{TABLE_DUEDATES}/records",
+            f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records",
             params={"where": f"(organization_id,eq,{org_id})", "limit": 1000}
         )
         return result.get('list', []) if result else []
@@ -537,8 +539,8 @@ async def create_due_date(data: DueDateCreate, authorization: str = Header(None)
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    if TABLE_DUEDATES:
-        await nocodb_post(f"/api/v2/tables/{TABLE_DUEDATES}/records", dd_data)
+    if NOCODB_TABLE_DUEDATES:
+        await nocodb_post(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", dd_data)
     
     return {"id": dd_id, **data.model_dump()}
 
@@ -554,15 +556,15 @@ async def update_due_date(dd_id: str, data: DueDateCreate, authorization: str = 
         "recurrence_frequency": data.recurrence_frequency
     }
     
-    if TABLE_DUEDATES:
-        await nocodb_patch(f"/api/v2/tables/{TABLE_DUEDATES}/records", update_data)
+    if NOCODB_TABLE_DUEDATES:
+        await nocodb_patch(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", update_data)
     
     return {"id": dd_id, **data.model_dump()}
 
 @api_router.delete("/due-dates/{dd_id}")
 async def delete_due_date(dd_id: str, authorization: str = Header(None)):
-    if TABLE_DUEDATES:
-        await nocodb_delete(f"/api/v2/tables/{TABLE_DUEDATES}/records", {"Id": dd_id})
+    if NOCODB_TABLE_DUEDATES:
+        await nocodb_delete(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", {"Id": dd_id})
     
     return {"message": "Due date deleted"}
 
@@ -573,8 +575,8 @@ async def update_due_date_status(dd_id: str, status: str, authorization: str = H
         "status": status
     }
     
-    if TABLE_DUEDATES:
-        await nocodb_patch(f"/api/v2/tables/{TABLE_DUEDATES}/records", update_data)
+    if NOCODB_TABLE_DUEDATES:
+        await nocodb_patch(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", update_data)
     
     return {"message": "Status updated"}
 
