@@ -67,8 +67,12 @@ def nc_get(endpoint: str, params: dict = None):
 def nc_post(endpoint: str, data: dict):
     try:
         r = requests.post(f"{NOCODB_URL}{endpoint}", headers=get_headers(), json=data, timeout=30)
-        return r.json() if r.status_code < 400 else None
-    except:
+        if r.status_code >= 400:
+            print(f"NocoDB POST error: {r.status_code} - {r.text}")
+            return None
+        return r.json()
+    except Exception as e:
+        print(f"NocoDB POST exception: {e}")
         return None
 
 def nc_patch(endpoint: str, data: dict):
