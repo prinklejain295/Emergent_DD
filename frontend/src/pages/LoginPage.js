@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, User } from 'lucide-react';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
 const API = `${BACKEND_URL}/api`;
 
 export default function LoginPage({ onLogin }) {
