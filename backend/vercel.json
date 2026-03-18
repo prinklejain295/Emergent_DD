@@ -2,6 +2,5 @@
   "rewrites": [
     {"source": "/api/(.*)", "destination": "/api/index"}
   ],
-  "framework": null,
-  "buildCommand": "pip install --prefer-binary -r requirements.txt"
+  "framework": null
 }
