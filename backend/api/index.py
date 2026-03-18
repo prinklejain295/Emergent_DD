@@ -3,18 +3,19 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from typing import Optional
 import uuid
+import hashlib
+import hmac
 from datetime import datetime, timezone, timedelta
-from passlib.context import CryptContext
 import jwt
 import os
 import requests
+import json
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 168
@@ -37,6 +38,12 @@ DEFAULT_SERVICE_TYPES = {
 
 def get_headers():
     return {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256((password + JWT_SECRET).encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return hash_password(password) == hashed
 
 def get_token():
     auth = request.headers.get('Authorization', '')
@@ -101,7 +108,7 @@ def register():
     user_id = str(uuid.uuid4())
     nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {
         "id": user_id, "email": data.get('email'), "name": data.get('name'),
-        "password": pwd_context.hash(data.get('password')),
+        "password": hash_password(data.get('password')),
         "organization_id": org_id, "role": "admin",
         "created_at": datetime.now(timezone.utc).isoformat()
     })
@@ -126,7 +133,7 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
     
     user = result['list'][0]
-    if not pwd_context.verify(password, user.get('password', '')):
+    if not verify_password(password, user.get('password', '')):
         return jsonify({"error": "Invalid credentials"}), 401
     
     token = create_jwt_token({"user_id": user['id'], "email": user['email'], "organization_id": user['organization_id']})
