@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Header
 from fastapi.security import HTTPBearer
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -37,6 +38,15 @@ DEFAULT_SERVICE_TYPES = {
 }
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 api_router = APIRouter(prefix="/api")
 
 class UserRegister(BaseModel):
