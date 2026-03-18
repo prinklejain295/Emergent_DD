@@ -3,5 +3,5 @@
     {"source": "/api/(.*)", "destination": "/api/index"}
   ],
   "framework": null,
-  "buildCommand": "pip install -r requirements.txt"
+  "buildCommand": "pip install --prefer-binary -r requirements.txt"
 }
