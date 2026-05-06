@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import axios from 'axios';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import ClientsPage from './pages/ClientsPage';
+import DueDatesPage from './pages/DueDatesPage';
+import RemindersPage from './pages/RemindersPage';
+import CalendarPage from './pages/CalendarPage';
+import Layout from './components/Layout';
+import './App.css';
 
 axios.interceptors.response.use(
   response => response,
@@ -15,14 +23,6 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import ClientsPage from './pages/ClientsPage';
-import DueDatesPage from './pages/DueDatesPage';
-import RemindersPage from './pages/RemindersPage';
-import CalendarPage from './pages/CalendarPage';
-import Layout from './components/Layout';
-import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
