@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { toastMsg } from '../utils/errorLogger';
 import { Plus, Edit2, Trash2, CheckCircle, Search, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -47,7 +48,7 @@ export default function DueDatesPage() {
       setClients(clientsRes.data);
       setServiceTypes(serviceTypesRes.data);
     } catch (error) {
-      toast.error('Failed to load data');
+      toast.error(await toastMsg('DueDatesPage.fetchData', error, 'Failed to load data'));
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function DueDatesPage() {
       setNewServiceName('');
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to add custom service');
+      toast.error(await toastMsg('DueDatesPage.addService', error, error.response?.data?.detail || 'Failed to add custom service'));
     }
   };
 
@@ -93,7 +94,7 @@ export default function DueDatesPage() {
       resetForm();
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save due date');
+      toast.error(await toastMsg('DueDatesPage.handleSubmit', error, error.response?.data?.detail || 'Failed to save due date'));
     }
   };
 
@@ -117,7 +118,7 @@ export default function DueDatesPage() {
       toast.success('Due date deleted successfully');
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete due date');
+      toast.error(await toastMsg('DueDatesPage.handleDelete', error, 'Failed to delete due date'));
     }
   };
 
@@ -127,7 +128,7 @@ export default function DueDatesPage() {
       toast.success('Status updated successfully');
       fetchData();
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(await toastMsg('DueDatesPage.handleStatusChange', error, 'Failed to update status'));
     }
   };
 

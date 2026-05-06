@@ -27,6 +27,7 @@ NOCODB_TABLE_USERS = os.environ.get('NOCODB_TABLE_USERS', '')
 NOCODB_TABLE_CLIENTS = os.environ.get('NOCODB_TABLE_CLIENTS', '')
 NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
+NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
@@ -309,7 +310,75 @@ def update_status(dd_id):
     user, error, code = get_token()
     if error:
         return error, code
-    
+
     status = request.args.get('status')
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", {"Id": dd_id, "status": status})
     return jsonify({"message": "Status updated"})
+
+# ── Error Logger ──────────────────────────────────────────────────────────────
+
+@app.route('/api/errors/log', methods=['POST'])
+def log_error():
+    """Public endpoint — no auth required so errors during login can be captured."""
+    data = request.get_json(force=True) or {}
+    if not NOCODB_TABLE_ERRORS:
+        return jsonify({"error": "Error logger not configured"}), 503
+
+    record = {
+        "type":      data.get('type', 'frontend'),
+        "component": data.get('component', ''),
+        "message":   str(data.get('message', ''))[:2000],
+        "stack":     str(data.get('stack', ''))[:5000],
+        "url":       data.get('url', ''),
+        "user_id":   data.get('user_id', ''),
+        "resolved":  False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_ERRORS}/records", record)
+    if result is None:
+        return jsonify({"error": "Failed to save error log"}), 500
+
+    nocodb_id = result.get('Id') or result.get('id', '?')
+    return jsonify({"error_number": f"ERR-{nocodb_id}", "id": nocodb_id}), 201
+
+@app.route('/api/errors', methods=['GET'])
+def get_errors():
+    """List all logged errors — requires auth."""
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_ERRORS:
+        return jsonify([])
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_ERRORS}/records",
+                    params={"limit": 200, "sort": "-created_at"})
+    return jsonify(result.get('list', []) if result else [])
+
+@app.route('/api/errors/<int:error_id>', methods=['GET'])
+def get_error(error_id):
+    """Get a single error by its NocoDB row number — requires auth."""
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_ERRORS:
+        return jsonify({"error": "Logger not configured"}), 503
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_ERRORS}/records",
+                    params={"where": f"(Id,eq,{error_id})", "limit": 1})
+    rows = result.get('list', []) if result else []
+    if not rows:
+        return jsonify({"error": f"ERR-{error_id} not found"}), 404
+    return jsonify(rows[0])
+
+@app.route('/api/errors/<int:error_id>/resolve', methods=['PATCH'])
+def resolve_error(error_id):
+    """Mark an error as resolved."""
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_ERRORS:
+        return jsonify({"error": "Logger not configured"}), 503
+
+    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_ERRORS}/records",
+             {"Id": error_id, "resolved": True})
+    return jsonify({"message": f"ERR-{error_id} marked as resolved"})

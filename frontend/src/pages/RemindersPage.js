@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { toastMsg } from '../utils/errorLogger';
 import { Plus, Trash2, Clock, ToggleLeft, ToggleRight } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
@@ -28,7 +29,7 @@ export default function RemindersPage() {
       const response = await axios.get(`${API}/reminders`, getAuthHeaders());
       setReminders(response.data.sort((a, b) => a.days_before - b.days_before));
     } catch (error) {
-      toast.error('Failed to load reminders');
+      toast.error(await toastMsg('RemindersPage.fetchReminders', error, 'Failed to load reminders'));
     } finally {
       setLoading(false);
     }
@@ -43,7 +44,7 @@ export default function RemindersPage() {
       setFormData({ days_before: 7, notification_time: '09:00' });
       fetchReminders();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create reminder');
+      toast.error(await toastMsg('RemindersPage.handleSubmit', error, error.response?.data?.detail || 'Failed to create reminder'));
     }
   };
 
@@ -54,7 +55,7 @@ export default function RemindersPage() {
       toast.success('Reminder deleted successfully');
       fetchReminders();
     } catch (error) {
-      toast.error('Failed to delete reminder');
+      toast.error(await toastMsg('RemindersPage.handleDelete', error, 'Failed to delete reminder'));
     }
   };
 
@@ -64,7 +65,7 @@ export default function RemindersPage() {
       toast.success(`Reminder ${response.data.is_active ? 'enabled' : 'disabled'}`);
       fetchReminders();
     } catch (error) {
-      toast.error('Failed to toggle reminder');
+      toast.error(await toastMsg('RemindersPage.handleToggle', error, 'Failed to toggle reminder'));
     }
   };
 

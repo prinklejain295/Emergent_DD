@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { toastMsg } from '../utils/errorLogger';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -32,7 +33,7 @@ export default function CalendarPage() {
       setDueDates(dueDatesRes.data);
       setClients(clientsRes.data);
     } catch (error) {
-      toast.error('Failed to load calendar data');
+      toast.error(await toastMsg('CalendarPage.fetchData', error, 'Failed to load calendar data'));
     } finally {
       setLoading(false);
     }

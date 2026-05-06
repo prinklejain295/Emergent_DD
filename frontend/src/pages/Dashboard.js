@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { toastMsg } from '../utils/errorLogger';
 import { TrendingUp, Users, Calendar, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -24,7 +25,7 @@ export default function Dashboard() {
       const response = await axios.get(`${API}/dashboard/stats`, getAuthHeaders());
       setStats(response.data);
     } catch (error) {
-      toast.error('Failed to load dashboard data');
+      toast.error(await toastMsg('Dashboard.fetchStats', error, 'Failed to load dashboard data'));
     } finally {
       setLoading(false);
     }

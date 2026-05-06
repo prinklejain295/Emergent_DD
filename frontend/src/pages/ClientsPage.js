@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { toastMsg } from '../utils/errorLogger';
 import { Plus, Edit2, Trash2, Mail, Phone, Building, Upload, Download } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
@@ -34,7 +35,7 @@ export default function ClientsPage() {
       const response = await axios.get(`${API}/clients`, getAuthHeaders());
       setClients(response.data);
     } catch (error) {
-      toast.error('Failed to load clients');
+      toast.error(await toastMsg('ClientsPage.fetchClients', error, 'Failed to load clients'));
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ export default function ClientsPage() {
       resetForm();
       fetchClients();
     } catch (error) {
-      toast.error(error.response?.data?.detail || error.response?.data?.error || 'Failed to save client');
+      toast.error(await toastMsg('ClientsPage.handleSubmit', error, error.response?.data?.detail || error.response?.data?.error || 'Failed to save client'));
     }
   };
 
@@ -77,7 +78,7 @@ export default function ClientsPage() {
       toast.success('Client deleted successfully');
       fetchClients();
     } catch (error) {
-      toast.error('Failed to delete client');
+      toast.error(await toastMsg('ClientsPage.handleDelete', error, 'Failed to delete client'));
     }
   };
 
@@ -109,7 +110,7 @@ export default function ClientsPage() {
       }
       fetchClients();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to upload file');
+      toast.error(await toastMsg('ClientsPage.upload', error, error.response?.data?.detail || 'Failed to upload file'));
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
