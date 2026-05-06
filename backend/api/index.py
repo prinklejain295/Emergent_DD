@@ -195,15 +195,20 @@ def create_client():
     user, error, code = get_token()
     if error:
         return error, code
-    
-    data = request.get_json()
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
     client_id = str(uuid.uuid4())
-    nc_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
         "id": client_id, "organization_id": user['organization_id'],
         "name": data.get('name'), "email": data.get('email'),
         "phone": data.get('phone'), "company": data.get('company'),
         "notes": data.get('notes'), "created_at": datetime.now(timezone.utc).isoformat()
     })
+    if result is None:
+        return jsonify({"error": "Failed to create client. Check database configuration."}), 500
     return jsonify({"id": client_id, **data})
 
 @app.route('/api/clients/<client_id>', methods=['PUT'])

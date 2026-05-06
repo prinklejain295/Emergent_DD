@@ -54,7 +54,7 @@ export default function ClientsPage() {
       resetForm();
       fetchClients();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save client');
+      toast.error(error.response?.data?.detail || error.response?.data?.error || 'Failed to save client');
     }
   };
 
