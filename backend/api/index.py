@@ -208,6 +208,7 @@ def create_client():
         "name": data.get('name'), "email": data.get('email'),
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
+        "doing_business_as": data.get('doing_business_as', ''),
         "tags": data.get('tags', ''), "notes": data.get('notes'),
         "created_at": datetime.now(timezone.utc).isoformat()
     })
@@ -226,6 +227,7 @@ def update_client(client_id):
         "Id": client_id, "name": data.get('name'), "email": data.get('email'),
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
+        "doing_business_as": data.get('doing_business_as', ''),
         "tags": data.get('tags', ''), "notes": data.get('notes')
     })
     return jsonify({"id": client_id, **data})
@@ -357,9 +359,11 @@ def create_client_service():
         "spoc":              data.get('spoc', ''),
         "internal_due_date": data.get('internal_due_date'),
         "regulatory_due_date": data.get('regulatory_due_date'),
-        "fees_status":       data.get('fees_status', ''),
-        "status":            data.get('status', 'Pending'),
-        "created_at":        datetime.now(timezone.utc).isoformat()
+        "fees_status":          data.get('fees_status', ''),
+        "status":               data.get('status', 'Pending'),
+        "is_recurring":         data.get('is_recurring', False),
+        "recurrence_frequency": data.get('recurrence_frequency', ''),
+        "created_at":           datetime.now(timezone.utc).isoformat()
     })
     if result is None:
         return jsonify({"error": "Failed to create service record"}), 500
@@ -386,8 +390,10 @@ def update_client_service(record_id):
         "spoc":                data.get('spoc'),
         "internal_due_date":   data.get('internal_due_date'),
         "regulatory_due_date": data.get('regulatory_due_date'),
-        "fees_status":         data.get('fees_status'),
-        "status":              data.get('status'),
+        "fees_status":          data.get('fees_status'),
+        "status":               data.get('status'),
+        "is_recurring":         data.get('is_recurring', False),
+        "recurrence_frequency": data.get('recurrence_frequency', ''),
     })
     return jsonify({"Id": record_id, **data})
 

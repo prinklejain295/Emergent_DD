@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { Plus, Edit2, Trash2, Search, X, Upload, Download, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Upload, Download, Filter, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
@@ -42,6 +42,17 @@ const fmtDate = (v) => {
 const EMPTY = {
   client_name: '', service_category: '', assignee: '', spoc: '',
   internal_due_date: '', regulatory_due_date: '', fees_status: '', status: 'Pending',
+  is_recurring: false, recurrence_frequency: 'Monthly',
+};
+
+const FREQ_MONTHS = { Monthly: 1, Quarterly: 3, 'Half-yearly': 6, Annually: 12 };
+
+const advanceDate = (dateStr, months) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
 };
 
 const EMPTY_FILTERS = {
@@ -98,14 +109,35 @@ export default function ClientServicesPage() {
   const openEdit = (rec) => {
     setEditingRecord(rec);
     setFormData({
-      client_name:         rec.client_name || '',
-      service_category:    rec.service_category || '',
-      assignee:            rec.assignee || '',
-      spoc:                rec.spoc || '',
-      internal_due_date:   rec.internal_due_date   ? rec.internal_due_date.split('T')[0]   : '',
-      regulatory_due_date: rec.regulatory_due_date ? rec.regulatory_due_date.split('T')[0] : '',
-      fees_status:         rec.fees_status || '',
-      status:              rec.status || 'Pending',
+      client_name:          rec.client_name || '',
+      service_category:     rec.service_category || '',
+      assignee:             rec.assignee || '',
+      spoc:                 rec.spoc || '',
+      internal_due_date:    rec.internal_due_date   ? rec.internal_due_date.split('T')[0]   : '',
+      regulatory_due_date:  rec.regulatory_due_date ? rec.regulatory_due_date.split('T')[0] : '',
+      fees_status:          rec.fees_status || '',
+      status:               rec.status || 'Pending',
+      is_recurring:         rec.is_recurring === true || rec.is_recurring === 'true',
+      recurrence_frequency: rec.recurrence_frequency || 'Monthly',
+    });
+    setShowModal(true);
+  };
+
+  /* Renew: pre-fill form with next-cycle dates, reset status + fees */
+  const handleRenew = (rec) => {
+    const months = FREQ_MONTHS[rec.recurrence_frequency || 'Monthly'] || 1;
+    setEditingRecord(null);
+    setFormData({
+      client_name:          rec.client_name || '',
+      service_category:     rec.service_category || '',
+      assignee:             rec.assignee || '',
+      spoc:                 rec.spoc || '',
+      internal_due_date:    advanceDate(rec.internal_due_date, months),
+      regulatory_due_date:  advanceDate(rec.regulatory_due_date, months),
+      fees_status:          '',
+      status:               'Pending',
+      is_recurring:         true,
+      recurrence_frequency: rec.recurrence_frequency || 'Monthly',
     });
     setShowModal(true);
   };
@@ -117,6 +149,8 @@ export default function ClientServicesPage() {
         ...formData,
         internal_due_date:   formData.internal_due_date   || null,
         regulatory_due_date: formData.regulatory_due_date || null,
+        is_recurring:        formData.is_recurring,
+        recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : '',
       };
       if (editingRecord) {
         await axios.put(`${API}/client-services/${editingRecord.Id}`, payload, getAuthHeaders());
@@ -479,16 +513,30 @@ export default function ClientServicesPage() {
                         : <span className="text-gray-400">—</span>}
                     </td>
 
+                    {/* Status + recurring badge */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {rec.status
-                        ? <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={statusStyle(rec.status)}>
-                            {rec.status}
-                          </span>
-                        : <span className="text-gray-400">—</span>}
+                      <div className="space-y-1">
+                        {rec.status
+                          ? <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={statusStyle(rec.status)}>{rec.status}</span>
+                          : <span className="text-gray-400">—</span>}
+                        {(rec.is_recurring === true || rec.is_recurring === 'true') && (
+                          <div className="flex items-center gap-1">
+                            <RefreshCw size={10} className="text-[#7C3AED]" />
+                            <span className="text-xs text-[#7C3AED] font-medium">{rec.recurrence_frequency || 'Recurring'}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
 
+                    {/* Actions */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {(rec.is_recurring === true || rec.is_recurring === 'true') && (
+                          <button onClick={() => handleRenew(rec)} title={`Renew next ${rec.recurrence_frequency || 'cycle'}`}
+                                  className="p-1.5 hover:bg-[#EDE9FE] rounded-lg">
+                            <RefreshCw size={14} className="text-[#7C3AED]" />
+                          </button>
+                        )}
                         <button onClick={() => openEdit(rec)} className="p-1.5 hover:bg-[#EDE9FE] rounded-lg" title="Edit">
                           <Edit2 size={14} className="text-[#6B7280]" />
                         </button>
@@ -581,6 +629,29 @@ export default function ClientServicesPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Recurring toggle */}
+              <div className={`flex flex-wrap items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${formData.is_recurring ? 'border-[#7C3AED] bg-[#EDE9FE]' : 'border-[#DDD6FE] bg-[#F5F3FF]'}`}
+                   onClick={() => setFormData(f => ({ ...f, is_recurring: !f.is_recurring }))}>
+                <div className={`w-10 h-6 rounded-full transition-all relative flex-shrink-0 ${formData.is_recurring ? 'bg-[#7C3AED]' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.is_recurring ? 'left-5' : 'left-1'}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-800">Recurring Compliance</p>
+                  <p className="text-xs text-gray-500">Dates will auto-advance when you use Renew</p>
+                </div>
+                {formData.is_recurring && (
+                  <select className="input-field text-sm h-9 w-36 flex-shrink-0"
+                          value={formData.recurrence_frequency}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => { e.stopPropagation(); setFormData(f => ({ ...f, recurrence_frequency: e.target.value })); }}>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-yearly">Half-yearly</option>
+                    <option value="Annually">Annually</option>
+                  </select>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
