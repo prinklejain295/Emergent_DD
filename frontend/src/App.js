@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ClientsPage from './pages/ClientsPage';
+import ClientServicesPage from './pages/ClientServicesPage';
 import DueDatesPage from './pages/DueDatesPage';
 import RemindersPage from './pages/RemindersPage';
 import CalendarPage from './pages/CalendarPage';
@@ -90,6 +91,18 @@ function App() {
               isAuthenticated ? (
                 <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <ClientsPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/client-services"
+            element={
+              isAuthenticated ? (
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
+                  <ClientServicesPage />
                 </Layout>
               ) : (
                 <Navigate to="/login" replace />

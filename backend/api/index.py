@@ -28,6 +28,7 @@ NOCODB_TABLE_CLIENTS = os.environ.get('NOCODB_TABLE_CLIENTS', '')
 NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
 NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
+NOCODB_TABLE_CLIENT_SERVICES = os.environ.get('NOCODB_TABLE_CLIENT_SERVICES', '')
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
@@ -314,6 +315,88 @@ def update_status(dd_id):
     status = request.args.get('status')
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_DUEDATES}/records", {"Id": dd_id, "status": status})
     return jsonify({"message": "Status updated"})
+
+# ── Client Services Dashboard ─────────────────────────────────────────────────
+
+@app.route('/api/client-services', methods=['GET'])
+def get_client_services():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_CLIENT_SERVICES:
+        return jsonify({"error": "Client services table not configured"}), 503
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})",
+                            "limit": 1000, "sort": "-created_at"})
+    return jsonify(result.get('list', []) if result else [])
+
+@app.route('/api/client-services', methods=['POST'])
+def create_client_service():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_CLIENT_SERVICES:
+        return jsonify({"error": "Client services table not configured"}), 503
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    record_id = str(uuid.uuid4())
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {
+        "id": record_id,
+        "organization_id": user['organization_id'],
+        "client_name":       data.get('client_name', ''),
+        "service_category":  data.get('service_category', ''),
+        "assignee":          data.get('assignee', ''),
+        "spoc":              data.get('spoc', ''),
+        "internal_due_date": data.get('internal_due_date'),
+        "regulatory_due_date": data.get('regulatory_due_date'),
+        "fees_status":       data.get('fees_status', ''),
+        "status":            data.get('status', 'Pending'),
+        "created_at":        datetime.now(timezone.utc).isoformat()
+    })
+    if result is None:
+        return jsonify({"error": "Failed to create service record"}), 500
+    nocodb_row_id = result.get('Id') or result.get('id', record_id)
+    return jsonify({"Id": nocodb_row_id, "id": record_id, **data}), 201
+
+@app.route('/api/client-services/<int:record_id>', methods=['PUT'])
+def update_client_service(record_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_CLIENT_SERVICES:
+        return jsonify({"error": "Client services table not configured"}), 503
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {
+        "Id": record_id,
+        "client_name":         data.get('client_name'),
+        "service_category":    data.get('service_category'),
+        "assignee":            data.get('assignee'),
+        "spoc":                data.get('spoc'),
+        "internal_due_date":   data.get('internal_due_date'),
+        "regulatory_due_date": data.get('regulatory_due_date'),
+        "fees_status":         data.get('fees_status'),
+        "status":              data.get('status'),
+    })
+    return jsonify({"Id": record_id, **data})
+
+@app.route('/api/client-services/<int:record_id>', methods=['DELETE'])
+def delete_client_service(record_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_CLIENT_SERVICES:
+        return jsonify({"error": "Client services table not configured"}), 503
+
+    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {"Id": record_id})
+    return jsonify({"message": "Service deleted"})
 
 # ── Error Logger ──────────────────────────────────────────────────────────────
 
