@@ -26,7 +26,7 @@ export default function LoginPage({ onLogin }) {
       toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
       onLogin(response.data.access_token, response.data.user, response.data.organization);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'An error occurred');
+      toast.error(error.response?.data?.detail || error.response?.data?.error || 'An error occurred');
     } finally {
       setLoading(false);
     }

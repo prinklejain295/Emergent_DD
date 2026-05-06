@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
-import axios from 'axios';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ClientsPage from './pages/ClientsPage';
@@ -10,19 +9,6 @@ import RemindersPage from './pages/RemindersPage';
 import CalendarPage from './pages/CalendarPage';
 import Layout from './components/Layout';
 import './App.css';
-
-axios.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 401 && localStorage.getItem('token')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('organization');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
