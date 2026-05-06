@@ -103,7 +103,7 @@ export default function DueDatesPage() {
       client_id: dueDate.client_id,
       service_type: dueDate.service_type,
       description: dueDate.description,
-      due_date: format(new Date(dueDate.due_date), 'yyyy-MM-dd'),
+      due_date: dueDate.due_date && !isNaN(new Date(dueDate.due_date)) ? format(new Date(dueDate.due_date), 'yyyy-MM-dd') : '',
       is_recurring: dueDate.is_recurring,
       recurrence_frequency: dueDate.recurrence_frequency || ''
     });
@@ -167,9 +167,10 @@ export default function DueDatesPage() {
   };
 
   const filteredDueDates = dueDates.filter(dd => {
-    const matchesSearch = dd.service_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         dd.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         getClientName(dd.client_id).toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = (dd.service_type || '').toLowerCase().includes(term) ||
+                         (dd.description || '').toLowerCase().includes(term) ||
+                         getClientName(dd.client_id).toLowerCase().includes(term);
     
     if (selectedCategory === 'all') return matchesSearch;
     
@@ -253,7 +254,7 @@ export default function DueDatesPage() {
       ) : (
         <div className="space-y-4">
           {filteredDueDates.map((dueDate) => {
-            const isPast = new Date(dueDate.due_date) < new Date();
+            const isPast = dueDate.due_date && new Date(dueDate.due_date) < new Date();
             const status = dueDate.status === 'completed' ? 'completed' : (isPast ? 'overdue' : 'pending');
             
             return (
@@ -282,7 +283,9 @@ export default function DueDatesPage() {
                     </h3>
                     <p className="text-sm text-gray-600 mb-3">{dueDate.description}</p>
                     <p className="text-sm font-medium text-black">
-                      Due: {format(new Date(dueDate.due_date), 'MMMM dd, yyyy')}
+                      Due: {dueDate.due_date && !isNaN(new Date(dueDate.due_date))
+                        ? format(new Date(dueDate.due_date), 'MMMM dd, yyyy')
+                        : '—'}
                     </p>
                   </div>
                   <div className="flex space-x-2">
