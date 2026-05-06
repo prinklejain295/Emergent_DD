@@ -160,7 +160,14 @@ export default function ClientServicesPage() {
       const headers  = rows[0];
       const dataRows = rows.slice(1).filter(r => r.some(c => c !== '' && c != null));
 
-      let imported = 0, skipped = 0;
+      // Pre-fetch existing clients to avoid duplicate creation
+      const existingClientsRes = await axios.get(`${API}/clients`, getAuthHeaders()).catch(() => ({ data: [] }));
+      const existingClientNames = new Set(
+        (existingClientsRes.data || []).map(c => (c.name || '').toLowerCase().trim())
+      );
+      const createdInThisSession = new Set(); // track newly created in this import
+
+      let imported = 0, skipped = 0, clientsCreated = 0;
 
       for (const row of dataRows) {
         const get = (field) => {
@@ -171,6 +178,25 @@ export default function ClientServicesPage() {
 
         const clientName = get('client_name');
         if (!clientName) { skipped++; continue; }
+
+        // Auto-create client in master if not already there
+        const clientKey = clientName.toLowerCase().trim();
+        if (!existingClientNames.has(clientKey) && !createdInThisSession.has(clientKey)) {
+          try {
+            await axios.post(`${API}/clients`, {
+              name:  clientName,
+              email: '',
+              phone: '',
+              company: clientName,
+              notes: 'Auto-created during service import',
+            }, getAuthHeaders());
+            existingClientNames.add(clientKey);
+            createdInThisSession.add(clientKey);
+            clientsCreated++;
+          } catch {
+            // non-fatal — still attempt to create the service row
+          }
+        }
 
         // Normalise dates that XLSX returns as JS Date objects
         const fmtExcelDate = (v) => {
@@ -196,7 +222,10 @@ export default function ClientServicesPage() {
         } catch { skipped++; }
       }
 
-      toast.success(`Imported ${imported} row${imported !== 1 ? 's' : ''}${skipped ? `, ${skipped} skipped` : ''}`);
+      const parts = [`Imported ${imported} service${imported !== 1 ? 's' : ''}`];
+      if (clientsCreated > 0) parts.push(`${clientsCreated} new client${clientsCreated !== 1 ? 's' : ''} created`);
+      if (skipped > 0) parts.push(`${skipped} skipped`);
+      toast.success(parts.join(' · '));
       fetchRecords();
     } catch (err) {
       toast.error(await toastMsg('ClientServicesPage.import', err, 'Failed to import Excel file'));
