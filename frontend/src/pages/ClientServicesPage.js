@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Plus, Edit2, Trash2, Search, X, Upload, Download, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
 const API = `${BACKEND_URL}/api`;
-
-const getAuthHeaders = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-});
+const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
 const SERVICE_CATEGORIES = [
   'Tax Filing', 'Payroll', 'Audit', 'GST / VAT', 'Compliance',
   'Advisory', 'Bookkeeping', 'Company Registration', 'Annual Filing',
   'TDS Filing', 'ROC Filing', 'Other',
 ];
-
-const FEES_STATUS_OPTIONS = [
-  'Pre Payment', 'Post Payment', 'Pending Payment',
-  'Invoiced', 'Waived', 'On Hold',
-];
-
+const FEES_STATUS_OPTIONS = ['Pre Payment', 'Post Payment', 'Pending Payment', 'Invoiced', 'Waived', 'On Hold'];
 const STATUS_OPTIONS = [
   { label: 'Done',         bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' },
   { label: 'In Progress',  bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A' },
@@ -33,34 +26,54 @@ const STATUS_OPTIONS = [
   { label: 'Not Started',  bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' },
 ];
 
-const getStatusStyle = (status) => {
-  const found = STATUS_OPTIONS.find(s => s.label === status);
-  return found
-    ? { backgroundColor: found.bg, color: found.text, border: `1px solid ${found.border}` }
+const statusStyle = (s) => {
+  const f = STATUS_OPTIONS.find(o => o.label === s);
+  return f
+    ? { backgroundColor: f.bg, color: f.text, border: `1px solid ${f.border}` }
     : { backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB' };
 };
 
-const fmtDate = (val) => {
-  if (!val) return '—';
-  const d = new Date(val);
-  if (isNaN(d)) return '—';
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const fmtDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const EMPTY_FORM = {
-  client_name: '', service_category: '', assignee: '',
-  spoc: '', internal_due_date: '', regulatory_due_date: '',
-  fees_status: '', status: 'Pending',
+const EMPTY = {
+  client_name: '', service_category: '', assignee: '', spoc: '',
+  internal_due_date: '', regulatory_due_date: '', fees_status: '', status: 'Pending',
 };
+
+const EMPTY_FILTERS = {
+  client_name: '', service_category: 'all', assignee: '',
+  spoc: 'all', fees_status: 'all', status: 'all',
+};
+
+// Flexible column name matching for Excel import
+const colMap = {
+  client_name:         ['client name', 'client_name', 'client'],
+  service_category:    ['service category', 'service_category', 'category', 'service'],
+  assignee:            ['assignee', 'assignees', 'assigned to', 'assigned_to'],
+  spoc:                ['spoc', 'single point of contact', 'poc'],
+  internal_due_date:   ['internal due date', 'internal_due_date', 'internal date'],
+  regulatory_due_date: ['due date (regulatory)', 'regulatory_due_date', 'regulatory due date', 'due date', 'deadline'],
+  fees_status:         ['fees status', 'fees_status', 'payment status', 'fees'],
+  status:              ['status'],
+};
+
+const matchCol = (header, field) =>
+  colMap[field].includes(String(header).toLowerCase().trim());
 
 export default function ClientServicesPage() {
-  const [records, setRecords]           = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [showModal, setShowModal]       = useState(false);
+  const [records, setRecords]             = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [uploading, setUploading]         = useState(false);
+  const [showModal, setShowModal]         = useState(false);
+  const [showFilters, setShowFilters]     = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [searchTerm, setSearchTerm]     = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [formData, setFormData]         = useState(EMPTY_FORM);
+  const [formData, setFormData]           = useState(EMPTY);
+  const [filters, setFilters]             = useState(EMPTY_FILTERS);
+  const fileInputRef                      = useRef(null);
 
   useEffect(() => { fetchRecords(); }, []);
 
@@ -75,9 +88,10 @@ export default function ClientServicesPage() {
     }
   };
 
+  /* ── CRUD ──────────────────────────────────────────────────────────── */
   const openAdd = (prefill = '') => {
     setEditingRecord(null);
-    setFormData({ ...EMPTY_FORM, client_name: prefill });
+    setFormData({ ...EMPTY, client_name: prefill });
     setShowModal(true);
   };
 
@@ -88,7 +102,7 @@ export default function ClientServicesPage() {
       service_category:    rec.service_category || '',
       assignee:            rec.assignee || '',
       spoc:                rec.spoc || '',
-      internal_due_date:   rec.internal_due_date ? rec.internal_due_date.split('T')[0] : '',
+      internal_due_date:   rec.internal_due_date   ? rec.internal_due_date.split('T')[0]   : '',
       regulatory_due_date: rec.regulatory_due_date ? rec.regulatory_due_date.split('T')[0] : '',
       fees_status:         rec.fees_status || '',
       status:              rec.status || 'Pending',
@@ -122,21 +136,110 @@ export default function ClientServicesPage() {
     if (!window.confirm(`Delete service for "${rec.client_name}"?`)) return;
     try {
       await axios.delete(`${API}/client-services/${rec.Id}`, getAuthHeaders());
-      toast.success('Service deleted');
+      toast.success('Deleted');
       fetchRecords();
     } catch (err) {
       toast.error(await toastMsg('ClientServicesPage.delete', err, 'Failed to delete'));
     }
   };
 
-  const existingClients = [...new Set(records.map(r => r.client_name).filter(Boolean))];
+  /* ── EXCEL IMPORT ──────────────────────────────────────────────────── */
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+
+    try {
+      const buffer   = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { cellDates: true });
+      const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+      const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+
+      if (rows.length < 2) { toast.error('File is empty or has no data rows'); return; }
+
+      const headers  = rows[0];
+      const dataRows = rows.slice(1).filter(r => r.some(c => c !== '' && c != null));
+
+      let imported = 0, skipped = 0;
+
+      for (const row of dataRows) {
+        const get = (field) => {
+          const idx = headers.findIndex(h => matchCol(h, field));
+          const val = idx >= 0 ? row[idx] : undefined;
+          return val != null ? String(val).trim() : '';
+        };
+
+        const clientName = get('client_name');
+        if (!clientName) { skipped++; continue; }
+
+        // Normalise dates that XLSX returns as JS Date objects
+        const fmtExcelDate = (v) => {
+          if (!v) return null;
+          if (v instanceof Date) return v.toISOString().split('T')[0];
+          return String(v).slice(0, 10) || null;
+        };
+
+        const payload = {
+          client_name:         clientName,
+          service_category:    get('service_category'),
+          assignee:            get('assignee'),
+          spoc:                get('spoc'),
+          internal_due_date:   fmtExcelDate(get('internal_due_date')),
+          regulatory_due_date: fmtExcelDate(get('regulatory_due_date')),
+          fees_status:         get('fees_status'),
+          status:              get('status') || 'Pending',
+        };
+
+        try {
+          await axios.post(`${API}/client-services`, payload, getAuthHeaders());
+          imported++;
+        } catch { skipped++; }
+      }
+
+      toast.success(`Imported ${imported} row${imported !== 1 ? 's' : ''}${skipped ? `, ${skipped} skipped` : ''}`);
+      fetchRecords();
+    } catch (err) {
+      toast.error(await toastMsg('ClientServicesPage.import', err, 'Failed to import Excel file'));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  /* ── TEMPLATE DOWNLOAD ─────────────────────────────────────────────── */
+  const downloadTemplate = () => {
+    const headers = ['Client Name','Service Category','Assignee','SPOC','Internal Due Date','Due Date (Regulatory)','Fees Status','Status'];
+    const sample  = ['Acme Corp','Tax Filing','Priya, Rohit','Prinkle','2026-05-15','2026-05-31','Pre Payment','In Progress'];
+    const ws      = XLSX.utils.aoa_to_sheet([headers, sample]);
+    const wb      = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Services');
+    XLSX.writeFile(wb, 'client_services_template.xlsx');
+  };
+
+  /* ── FILTERING ─────────────────────────────────────────────────────── */
+  const setFilter = (key, val) => setFilters(f => ({ ...f, [key]: val }));
+  const clearFilters = () => setFilters(EMPTY_FILTERS);
+  const activeFilterCount = Object.entries(filters).filter(([, v]) => v !== 'all' && v !== '').length;
+
+  // Derive unique SPOC values for dropdown
+  const spocOptions = [...new Set(records.map(r => r.spoc).filter(Boolean))].sort();
 
   const filtered = records.filter(r => {
-    const matchSearch = (r.client_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
-    return matchSearch && matchStatus;
+    const cn = (r.client_name || '').toLowerCase();
+    const as = (r.assignee   || '').toLowerCase();
+    return (
+      (!filters.client_name    || cn.includes(filters.client_name.toLowerCase())) &&
+      (filters.service_category === 'all' || r.service_category === filters.service_category) &&
+      (!filters.assignee       || as.includes(filters.assignee.toLowerCase())) &&
+      (filters.spoc       === 'all' || r.spoc        === filters.spoc) &&
+      (filters.fees_status === 'all' || r.fees_status === filters.fees_status) &&
+      (filters.status      === 'all' || r.status      === filters.status)
+    );
   });
 
+  const existingClients = [...new Set(records.map(r => r.client_name).filter(Boolean))];
+
+  /* ── RENDER ─────────────────────────────────────────────────────────── */
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00C9A7]" />
@@ -146,60 +249,154 @@ export default function ClientServicesPage() {
   return (
     <div className="animate-fade-in">
 
-      {/* Page header */}
+      {/* Header */}
       <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">Client Services</h1>
           <p className="page-description">Track services, deadlines, fees and status for every client</p>
         </div>
-        <button onClick={() => openAdd()} className="btn-primary flex items-center space-x-2 self-start sm:self-auto">
-          <Plus size={18} />
-          <span>Add Service</span>
-        </button>
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          {/* Download template */}
+          <button onClick={downloadTemplate} className="btn-outline flex items-center gap-2 text-sm py-2 px-3">
+            <Download size={15} />
+            <span className="hidden sm:inline">Template</span>
+          </button>
+
+          {/* Import Excel */}
+          <label className={`btn-secondary flex items-center gap-2 text-sm py-2 px-3 cursor-pointer ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+            <Upload size={15} />
+            <span className="hidden sm:inline">{uploading ? 'Importing…' : 'Import Excel'}</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleExcelUpload}
+              disabled={uploading}
+            />
+          </label>
+
+          {/* Add service */}
+          <button onClick={() => openAdd()} className="btn-primary flex items-center gap-2 text-sm py-2 px-3">
+            <Plus size={15} />
+            <span>Add Service</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filters bar */}
-      <div className="card p-4 mb-6 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by client name…"
-            className="input-field pl-9"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X size={14} />
+      {/* Filter toggle bar */}
+      <div className="card p-4 mb-4">
+        <div className="flex items-center gap-3">
+          {/* Client name always-visible quick search */}
+          <div className="relative flex-1 min-w-0">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search client name…"
+              className="input-field pl-9 text-sm h-10"
+              value={filters.client_name}
+              onChange={e => setFilter('client_name', e.target.value)}
+            />
+            {filters.client_name && (
+              <button onClick={() => setFilter('client_name', '')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter toggle button */}
+          <button
+            onClick={() => setShowFilters(f => !f)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              activeFilterCount > 0
+                ? 'bg-[#E0F7F4] border-[#00C9A7] text-[#00796B]'
+                : 'bg-white border-[#B2DFDB] text-[#6B7280] hover:border-[#00C9A7] hover:text-[#00796B]'
+            }`}
+          >
+            <Filter size={14} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="bg-[#00C9A7] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+            {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {activeFilterCount > 0 && (
+            <button onClick={clearFilters} className="text-sm text-[#6B7280] hover:text-red-500 flex items-center gap-1 transition-colors">
+              <X size={13} /> Clear
             </button>
           )}
         </div>
-        <select
-          className="input-field sm:w-48"
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-        >
-          <option value="all">All Statuses</option>
-          {STATUS_OPTIONS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
-        </select>
+
+        {/* Expandable filter panel */}
+        {showFilters && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t border-[#E0F7F4]">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Service Category</label>
+              <select className="input-field text-sm h-9" value={filters.service_category} onChange={e => setFilter('service_category', e.target.value)}>
+                <option value="all">All</option>
+                {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Assignee</label>
+              <input
+                type="text"
+                className="input-field text-sm h-9"
+                placeholder="Search assignee…"
+                value={filters.assignee}
+                onChange={e => setFilter('assignee', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">SPOC</label>
+              <select className="input-field text-sm h-9" value={filters.spoc} onChange={e => setFilter('spoc', e.target.value)}>
+                <option value="all">All</option>
+                {spocOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Fees Status</label>
+              <select className="input-field text-sm h-9" value={filters.fees_status} onChange={e => setFilter('fees_status', e.target.value)}>
+                <option value="all">All</option>
+                {FEES_STATUS_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Status</label>
+              <select className="input-field text-sm h-9" value={filters.status} onChange={e => setFilter('status', e.target.value)}>
+                <option value="all">All</option>
+                {STATUS_OPTIONS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="card p-14 text-center">
           <p className="text-[#6B7280] mb-4 text-lg">
-            {searchTerm || filterStatus !== 'all' ? 'No matching services found' : 'No services yet — add your first one'}
+            {activeFilterCount > 0 || filters.client_name
+              ? 'No services match your filters'
+              : 'No services yet — add one or import from Excel'}
           </p>
-          {!searchTerm && filterStatus === 'all' && (
-            <button onClick={() => openAdd()} className="btn-primary">Add First Service</button>
+          {activeFilterCount === 0 && !filters.client_name && (
+            <div className="flex justify-center gap-3">
+              <button onClick={() => openAdd()} className="btn-primary">Add Service</button>
+              <label className="btn-outline cursor-pointer flex items-center gap-2">
+                <Upload size={15} /> Import Excel
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
+              </label>
+            </div>
           )}
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
-              {/* Dark green header */}
               <thead>
                 <tr style={{ backgroundColor: '#00695C' }}>
                   {['Client Name','Service Category','Assignee','SPOC','Internal Due Date','Due Date (Regulatory)','Fees Status','Status',''].map(h => (
@@ -211,11 +408,8 @@ export default function ClientServicesPage() {
               </thead>
               <tbody>
                 {filtered.map((rec, i) => (
-                  <tr
-                    key={rec.Id || i}
-                    className="group border-b border-[#E0F7F4] hover:bg-[#F0FDFB] transition-colors"
-                  >
-                    {/* Client name + quick-add */}
+                  <tr key={rec.Id || i} className="group border-b border-[#E0F7F4] hover:bg-[#F0FDFB] transition-colors">
+
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-[#00796B]">{rec.client_name || '—'}</span>
@@ -229,12 +423,8 @@ export default function ClientServicesPage() {
                       </div>
                     </td>
 
-                    {/* Service category */}
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">
-                      {rec.service_category || '—'}
-                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">{rec.service_category || '—'}</td>
 
-                    {/* Assignee — pill tags */}
                     <td className="px-4 py-3 max-w-[180px]">
                       {rec.assignee
                         ? <div className="flex flex-wrap gap-1">
@@ -244,47 +434,30 @@ export default function ClientServicesPage() {
                               </span>
                             ))}
                           </div>
-                        : <span className="text-gray-400">—</span>
-                      }
+                        : <span className="text-gray-400">—</span>}
                     </td>
 
-                    {/* SPOC */}
                     <td className="px-4 py-3 whitespace-nowrap text-gray-700">{rec.spoc || '—'}</td>
 
-                    {/* Internal due date */}
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-600 tabular-nums">
-                      {fmtDate(rec.internal_due_date)}
-                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-600 tabular-nums">{fmtDate(rec.internal_due_date)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-600 tabular-nums">{fmtDate(rec.regulatory_due_date)}</td>
 
-                    {/* Regulatory due date */}
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-600 tabular-nums">
-                      {fmtDate(rec.regulatory_due_date)}
-                    </td>
-
-                    {/* Fees status */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       {rec.fees_status
                         ? <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs px-2.5 py-1 rounded-full font-medium">
                             {rec.fees_status}
                           </span>
-                        : <span className="text-gray-400">—</span>
-                      }
+                        : <span className="text-gray-400">—</span>}
                     </td>
 
-                    {/* Status — color coded */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       {rec.status
-                        ? <span
-                            className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                            style={getStatusStyle(rec.status)}
-                          >
+                        ? <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={statusStyle(rec.status)}>
                             {rec.status}
                           </span>
-                        : <span className="text-gray-400">—</span>
-                      }
+                        : <span className="text-gray-400">—</span>}
                     </td>
 
-                    {/* Actions */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEdit(rec)} className="p-1.5 hover:bg-[#E0F7F4] rounded-lg" title="Edit">
@@ -300,137 +473,80 @@ export default function ClientServicesPage() {
               </tbody>
             </table>
           </div>
-
-          {/* Footer count */}
           <div className="px-4 py-2.5 bg-[#F0FDFB] border-t border-[#E0F7F4] text-xs text-[#6B7280]">
             Showing {filtered.length} of {records.length} service{records.length !== 1 ? 's' : ''}
+            {activeFilterCount > 0 && ` · ${activeFilterCount} filter${activeFilterCount !== 1 ? 's' : ''} active`}
           </div>
         </div>
       )}
 
-      {/* ── Add / Edit Modal ─────────────────────────────────────────── */}
+      {/* ── Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col max-h-[92vh] overflow-hidden shadow-2xl">
-
-            {/* Modal header — dark green */}
             <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: '#00695C' }}>
               <h2 className="text-lg font-bold text-white">
                 {editingRecord ? 'Edit Service' : 'Add New Service'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-white/80 hover:text-white hover:bg-white/20 p-1 rounded transition-colors">
+              <button onClick={() => setShowModal(false)} className="text-white/80 hover:text-white hover:bg-white/20 p-1 rounded">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Modal body */}
             <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
-
-              {/* Row 1 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Client Name *</label>
-                  <input
-                    type="text"
-                    list="cs-clients"
-                    className="input-field"
-                    placeholder="Type or pick existing client"
-                    value={formData.client_name}
-                    onChange={e => setFormData({ ...formData, client_name: e.target.value })}
-                    required
-                    autoFocus
-                  />
-                  <datalist id="cs-clients">
-                    {existingClients.map(n => <option key={n} value={n} />)}
-                  </datalist>
+                  <input type="text" list="cs-clients" className="input-field" placeholder="Type or pick existing"
+                    value={formData.client_name} onChange={e => setFormData({ ...formData, client_name: e.target.value })} required autoFocus />
+                  <datalist id="cs-clients">{existingClients.map(n => <option key={n} value={n} />)}</datalist>
                 </div>
                 <div>
                   <label className="label">Service Category *</label>
-                  <select
-                    className="input-field"
-                    value={formData.service_category}
-                    onChange={e => setFormData({ ...formData, service_category: e.target.value })}
-                    required
-                  >
+                  <select className="input-field" value={formData.service_category}
+                    onChange={e => setFormData({ ...formData, service_category: e.target.value })} required>
                     <option value="">Select category</option>
                     {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Assignee(s)</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. Priya, Rohit, Sneha"
-                    value={formData.assignee}
-                    onChange={e => setFormData({ ...formData, assignee: e.target.value })}
-                  />
+                  <input type="text" className="input-field" placeholder="e.g. Priya, Rohit"
+                    value={formData.assignee} onChange={e => setFormData({ ...formData, assignee: e.target.value })} />
                   <p className="text-xs text-gray-400 mt-1">Separate multiple names with commas</p>
                 </div>
                 <div>
                   <label className="label">SPOC</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Single point of contact"
-                    value={formData.spoc}
-                    onChange={e => setFormData({ ...formData, spoc: e.target.value })}
-                  />
+                  <input type="text" className="input-field" placeholder="Single point of contact"
+                    value={formData.spoc} onChange={e => setFormData({ ...formData, spoc: e.target.value })} />
                 </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Internal Due Date</label>
-                  <input
-                    type="date"
-                    className="input-field"
-                    value={formData.internal_due_date}
-                    onChange={e => setFormData({ ...formData, internal_due_date: e.target.value })}
-                  />
+                  <input type="date" className="input-field" value={formData.internal_due_date}
+                    onChange={e => setFormData({ ...formData, internal_due_date: e.target.value })} />
                 </div>
                 <div>
                   <label className="label">Due Date (Regulatory)</label>
-                  <input
-                    type="date"
-                    className="input-field"
-                    value={formData.regulatory_due_date}
-                    onChange={e => setFormData({ ...formData, regulatory_due_date: e.target.value })}
-                  />
+                  <input type="date" className="input-field" value={formData.regulatory_due_date}
+                    onChange={e => setFormData({ ...formData, regulatory_due_date: e.target.value })} />
                 </div>
-              </div>
-
-              {/* Row 4 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Fees Status</label>
-                  <select
-                    className="input-field"
-                    value={formData.fees_status}
-                    onChange={e => setFormData({ ...formData, fees_status: e.target.value })}
-                  >
+                  <select className="input-field" value={formData.fees_status}
+                    onChange={e => setFormData({ ...formData, fees_status: e.target.value })}>
                     <option value="">Select fees status</option>
                     {FEES_STATUS_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label">Status</label>
-                  <select
-                    className="input-field"
-                    value={formData.status}
-                    onChange={e => setFormData({ ...formData, status: e.target.value })}
-                  >
+                  <select className="input-field" value={formData.status}
+                    onChange={e => setFormData({ ...formData, status: e.target.value })}>
                     {STATUS_OPTIONS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                   </select>
-                  {/* Status preview */}
                   {formData.status && (
                     <div className="mt-2">
-                      <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={getStatusStyle(formData.status)}>
+                      <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={statusStyle(formData.status)}>
                         {formData.status}
                       </span>
                     </div>
@@ -438,14 +554,9 @@ export default function ClientServicesPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="btn-primary flex-1">
-                  {editingRecord ? 'Update Service' : 'Add Service'}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">
-                  Cancel
-                </button>
+                <button type="submit" className="btn-primary flex-1">{editingRecord ? 'Update Service' : 'Add Service'}</button>
+                <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">Cancel</button>
               </div>
             </form>
           </div>

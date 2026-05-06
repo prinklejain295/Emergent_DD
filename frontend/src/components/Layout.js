@@ -10,7 +10,6 @@ export default function Layout({ children, user, organization, onLogout }) {
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/clients', icon: Users, label: 'Clients' },
     { path: '/client-services', icon: ClipboardList, label: 'Services' },
-    { path: '/due-dates', icon: Calendar, label: 'Due Dates' },
     { path: '/reminders', icon: Bell, label: 'Reminders' },
     { path: '/calendar', icon: Calendar, label: 'Calendar' }
   ];
