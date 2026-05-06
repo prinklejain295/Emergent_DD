@@ -206,8 +206,10 @@ def create_client():
     result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
         "id": client_id, "organization_id": user['organization_id'],
         "name": data.get('name'), "email": data.get('email'),
-        "phone": data.get('phone'), "company": data.get('company'),
-        "notes": data.get('notes'), "created_at": datetime.now(timezone.utc).isoformat()
+        "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
+        "company": data.get('company'), "type": data.get('type', 'individual'),
+        "tags": data.get('tags', ''), "notes": data.get('notes'),
+        "created_at": datetime.now(timezone.utc).isoformat()
     })
     if result is None:
         return jsonify({"error": "Failed to create client. Check database configuration."}), 500
@@ -222,7 +224,9 @@ def update_client(client_id):
     data = request.get_json()
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
         "Id": client_id, "name": data.get('name'), "email": data.get('email'),
-        "phone": data.get('phone'), "company": data.get('company'), "notes": data.get('notes')
+        "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
+        "company": data.get('company'), "type": data.get('type', 'individual'),
+        "tags": data.get('tags', ''), "notes": data.get('notes')
     })
     return jsonify({"id": client_id, **data})
 

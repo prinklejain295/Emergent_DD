@@ -35,36 +35,49 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen flex animate-fade-in">
       {/* Left side - Brand */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#00C9A7] items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12 relative overflow-hidden"
+           style={{ background: 'linear-gradient(135deg, #4C1D95 0%, #6D28D9 50%, #7C3AED 100%)' }}>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10"
+             style={{ background: 'radial-gradient(circle, #A855F7 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-10"
+             style={{ background: 'radial-gradient(circle, #EC4899 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
+        <div className="absolute top-1/4 right-12 w-32 h-32 rounded-full border-4 border-white/10" />
+        <div className="absolute bottom-1/4 left-12 w-20 h-20 rounded-full border-2 border-white/10" />
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 rounded-full border border-white/5"
+             style={{ transform: 'translate(-50%, -50%)' }} />
+        {/* Floating geometric shapes */}
+        <div className="absolute top-20 left-16 w-8 h-8 rotate-45 bg-white/10 rounded-sm animate-float" />
+        <div className="absolute bottom-24 right-20 w-6 h-6 rotate-12 bg-purple-300/20 rounded-sm animate-float"
+             style={{ animationDelay: '1s' }} />
+        {/* Dot pattern */}
+        <svg className="absolute inset-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="login-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="white" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#login-dots)" />
+        </svg>
+
         <div className="text-white max-w-lg z-10 animate-slide-in">
           <div className="mb-8">
-            <div className="w-16 h-16 bg-white/20 rounded-xl mb-6 flex items-center justify-center text-white text-3xl font-bold">
+            <div className="w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-white text-3xl font-bold shadow-2xl"
+                 style={{ background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)' }}>
               D
             </div>
           </div>
-          <h1 className="text-6xl font-bold mb-6 tracking-tight">
-            DueDate
-          </h1>
+          <h1 className="text-6xl font-bold mb-6 tracking-tight">DueDate</h1>
           <p className="text-xl leading-relaxed text-white/80">
             Never miss a compliance deadline. Automate reminders, collaborate with your team, and stay organized.
           </p>
           <div className="mt-12 space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-white/70">Multi-user collaboration</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-white/70">Automated email reminders</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-white/70">Bulk client import</span>
-            </div>
+            {['Multi-user collaboration', 'Automated email reminders', 'Bulk client import'].map(f => (
+              <div key={f} className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-purple-300 rounded-full shadow-sm" />
+                <span className="text-white/75 font-medium">{f}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

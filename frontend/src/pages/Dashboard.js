@@ -34,7 +34,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00C9A7]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
       </div>
     );
   }
@@ -50,11 +50,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="card p-6 hover:shadow-lg transition-shadow" data-testid="stat-clients">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-[#E0F7F4] rounded-lg">
-              <Users size={24} className="text-[#00796B]" />
+            <div className="p-3 bg-[#EDE9FE] rounded-lg">
+              <Users size={24} className="text-[#5B21B6]" />
             </div>
           </div>
-          <h3 className="text-3xl font-bold text-[#00796B] mb-1">{stats?.total_clients || 0}</h3>
+          <h3 className="text-3xl font-bold text-[#5B21B6] mb-1">{stats?.total_clients || 0}</h3>
           <p className="text-sm text-[#6B7280]">Total Clients</p>
         </div>
 
@@ -64,7 +64,7 @@ export default function Dashboard() {
               <Calendar size={24} className="text-[#1E40AF]" />
             </div>
           </div>
-          <h3 className="text-3xl font-bold text-[#00796B] mb-1">{stats?.total_due_dates || 0}</h3>
+          <h3 className="text-3xl font-bold text-[#5B21B6] mb-1">{stats?.total_due_dates || 0}</h3>
           <p className="text-sm text-[#6B7280]">Total Due Dates</p>
         </div>
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
               <TrendingUp size={24} className="text-[#92400E]" />
             </div>
           </div>
-          <h3 className="text-3xl font-bold text-[#00796B] mb-1">{stats?.upcoming_count || 0}</h3>
+          <h3 className="text-3xl font-bold text-[#5B21B6] mb-1">{stats?.upcoming_count || 0}</h3>
           <p className="text-sm text-[#6B7280]">Upcoming (30 days)</p>
         </div>
 
@@ -91,7 +91,7 @@ export default function Dashboard() {
 
       {/* Upcoming Due Dates */}
       <div className="card p-6">
-        <h2 className="text-2xl font-bold text-[#00796B] mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <h2 className="text-2xl font-bold text-[#5B21B6] mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
           Upcoming Due Dates
         </h2>
         
@@ -106,17 +106,17 @@ export default function Dashboard() {
               <div
                 key={dueDate.id}
                 data-testid={`due-date-item-${dueDate.id}`}
-                className="flex items-center justify-between p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB] hover:border-[#00796B] transition-all"
+                className="flex items-center justify-between p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB] hover:border-[#5B21B6] transition-all"
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <span className="badge badge-pending">{dueDate.service_type}</span>
-                    <h3 className="font-semibold text-[#00796B]">{dueDate.client?.name}</h3>
+                    <h3 className="font-semibold text-[#5B21B6]">{dueDate.client?.name}</h3>
                   </div>
                   <p className="text-sm text-[#6B7280]">{dueDate.description}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-[#00796B]">
+                  <p className="text-sm font-medium text-[#5B21B6]">
                     {dueDate.due_date && !isNaN(new Date(dueDate.due_date))
                       ? format(new Date(dueDate.due_date), 'MMM dd, yyyy')
                       : '—'}
