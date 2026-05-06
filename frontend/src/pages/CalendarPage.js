@@ -76,7 +76,7 @@ export default function CalendarPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064E3B]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00C9A7]"></div>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function CalendarPage() {
       <div className="card p-6">
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[#064E3B]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-2xl font-bold text-[#00796B]" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <div className="flex space-x-2">
@@ -136,11 +136,11 @@ export default function CalendarPage() {
                 className={`
                   min-h-[80px] p-2 border rounded-lg transition-all
                   ${!isCurrentMonth ? 'bg-[#F9FAFB] text-[#9CA3AF]' : 'bg-white'}
-                  ${isTodayDate ? 'border-[#064E3B] border-2' : 'border-[#E5E7EB]'}
-                  ${hasDueDates ? 'cursor-pointer hover:border-[#064E3B] hover:shadow-md' : ''}
+                  ${isTodayDate ? 'border-[#00796B] border-2' : 'border-[#E5E7EB]'}
+                  ${hasDueDates ? 'cursor-pointer hover:border-[#00796B] hover:shadow-md' : ''}
                 `}
               >
-                <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'text-[#064E3B]' : ''}`}>
+                <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'text-[#00796B]' : ''}`}>
                   {format(day, 'd')}
                 </div>
                 {hasDueDates && (
@@ -171,7 +171,7 @@ export default function CalendarPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto" data-testid="date-details-modal">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-[#064E3B]">
+              <h2 className="text-2xl font-bold text-[#00796B]">
                 {format(selectedDate, 'MMMM dd, yyyy')}
               </h2>
               <button

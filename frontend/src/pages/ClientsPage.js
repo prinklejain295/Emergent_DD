@@ -139,7 +139,7 @@ export default function ClientsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064E3B]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00C9A7]"></div>
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function ClientsPage() {
             <div key={client.id} data-testid={`client-card-${client.id}`} className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-[#064E3B] mb-2">{client.name}</h3>
+                  <h3 className="text-lg font-semibold text-[#00796B] mb-2">{client.name}</h3>
                   {client.company && (
                     <p className="text-sm text-[#6B7280] mb-3">{client.company}</p>
                   )}
@@ -248,7 +248,7 @@ export default function ClientsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6" data-testid="client-modal">
-            <h2 className="text-2xl font-bold text-[#064E3B] mb-6">
+            <h2 className="text-2xl font-bold text-[#00796B] mb-6">
               {editingClient ? 'Edit Client' : 'Add New Client'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">

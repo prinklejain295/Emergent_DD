@@ -71,7 +71,7 @@ export default function RemindersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064E3B]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00C9A7]"></div>
       </div>
     );
   }
@@ -94,12 +94,12 @@ export default function RemindersPage() {
       </div>
 
       {/* Info Card */}
-      <div className="card p-6 mb-6 bg-[#DBEAFE] border-[#93C5FD]">
-        <h3 className="font-semibold text-[#1E40AF] mb-2 flex items-center space-x-2">
+      <div className="card p-6 mb-6 bg-[#E0F7F4] border-[#4DB6AC]">
+        <h3 className="font-semibold text-[#00796B] mb-2 flex items-center space-x-2">
           <Clock size={20} />
           <span>How Reminders Work</span>
         </h3>
-        <p className="text-sm text-[#1E40AF]">
+        <p className="text-sm text-[#00796B]">
           Reminders are automatically sent to both you and your clients based on the schedule you set. 
           For example, a "7 days before" reminder will send emails 7 days prior to each due date.
         </p>
@@ -124,7 +124,7 @@ export default function RemindersPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-[#064E3B] mb-2">
+                  <h3 className="text-2xl font-bold text-[#00796B] mb-2">
                     {reminder.days_before} {reminder.days_before === 1 ? 'day' : 'days'}
                   </h3>
                   <p className="text-sm text-[#6B7280]">before due date</p>
@@ -137,7 +137,7 @@ export default function RemindersPage() {
                     title={reminder.is_active ? 'Disable' : 'Enable'}
                   >
                     {reminder.is_active ? (
-                      <ToggleRight size={24} className="text-[#059669]" />
+                      <ToggleRight size={24} className="text-[#00C9A7]" />
                     ) : (
                       <ToggleLeft size={24} className="text-[#9CA3AF]" />
                     )}
@@ -172,7 +172,7 @@ export default function RemindersPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6" data-testid="reminder-modal">
-            <h2 className="text-2xl font-bold text-[#064E3B] mb-6">Add Reminder Schedule</h2>
+            <h2 className="text-2xl font-bold text-[#00796B] mb-6">Add Reminder Schedule</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="label">Days Before Due Date *</label>

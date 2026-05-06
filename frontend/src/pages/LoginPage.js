@@ -35,35 +35,35 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen flex animate-fade-in">
       {/* Left side - Brand */}
-      <div className="hidden lg:flex lg:w-1/2 bg-black items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
+      <div className="hidden lg:flex lg:w-1/2 bg-[#00C9A7] items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
         <div className="text-white max-w-lg z-10 animate-slide-in">
           <div className="mb-8">
-            <div className="w-16 h-16 bg-white rounded-xl mb-6 flex items-center justify-center text-black text-3xl font-bold">
+            <div className="w-16 h-16 bg-white/20 rounded-xl mb-6 flex items-center justify-center text-white text-3xl font-bold">
               D
             </div>
           </div>
           <h1 className="text-6xl font-bold mb-6 tracking-tight">
             DueDate
           </h1>
-          <p className="text-xl leading-relaxed text-gray-300">
+          <p className="text-xl leading-relaxed text-white/80">
             Never miss a compliance deadline. Automate reminders, collaborate with your team, and stay organized.
           </p>
           <div className="mt-12 space-y-4">
             <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-gray-400">Multi-user collaboration</span>
+              <span className="text-white/70">Multi-user collaboration</span>
             </div>
             <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-gray-400">Automated email reminders</span>
+              <span className="text-white/70">Automated email reminders</span>
             </div>
             <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span className="text-gray-400">Bulk client import</span>
+              <span className="text-white/70">Bulk client import</span>
             </div>
           </div>
         </div>
