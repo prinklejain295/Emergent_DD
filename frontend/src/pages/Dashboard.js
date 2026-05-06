@@ -116,10 +116,14 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-[#064E3B]">
-                    {format(new Date(dueDate.due_date), 'MMM dd, yyyy')}
+                    {dueDate.due_date && !isNaN(new Date(dueDate.due_date))
+                      ? format(new Date(dueDate.due_date), 'MMM dd, yyyy')
+                      : '—'}
                   </p>
                   <p className="text-xs text-[#6B7280] mt-1">
-                    {Math.ceil((new Date(dueDate.due_date) - new Date()) / (1000 * 60 * 60 * 24))} days left
+                    {dueDate.due_date && !isNaN(new Date(dueDate.due_date))
+                      ? `${Math.ceil((new Date(dueDate.due_date) - new Date()) / (1000 * 60 * 60 * 24))} days left`
+                      : ''}
                   </p>
                 </div>
               </div>
