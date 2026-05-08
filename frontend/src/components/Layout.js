@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList, Target } from 'lucide-react';
 
 export default function Layout({ children, user, organization, onLogout }) {
   const location = useLocation();
@@ -10,6 +10,7 @@ export default function Layout({ children, user, organization, onLogout }) {
     { path: '/',                icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/clients',         icon: Users,           label: 'Clients'   },
     { path: '/client-services', icon: ClipboardList,   label: 'Services'  },
+    { path: '/leads',           icon: Target,          label: 'Leads'     },
     { path: '/reminders',       icon: Bell,            label: 'Reminders' },
     { path: '/calendar',        icon: Calendar,        label: 'Calendar'  },
   ];

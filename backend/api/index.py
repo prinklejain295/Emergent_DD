@@ -29,6 +29,7 @@ NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
 NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
 NOCODB_TABLE_CLIENT_SERVICES = os.environ.get('NOCODB_TABLE_CLIENT_SERVICES', '')
+NOCODB_TABLE_LEADS = os.environ.get('NOCODB_TABLE_LEADS', '')
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
@@ -407,6 +408,83 @@ def delete_client_service(record_id):
 
     nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {"Id": record_id})
     return jsonify({"message": "Service deleted"})
+
+# ── Leads / Pipeline ──────────────────────────────────────────────────────────
+
+@app.route('/api/leads', methods=['GET'])
+def get_leads():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_LEADS:
+        return jsonify({"error": "Leads table not configured"}), 503
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})",
+                            "limit": 1000, "sort": "-created_at"})
+    return jsonify(result.get('list', []) if result else [])
+
+@app.route('/api/leads', methods=['POST'])
+def create_lead():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_LEADS:
+        return jsonify({"error": "Leads table not configured"}), 503
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    lead_id = str(uuid.uuid4())
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {
+        "id":                 lead_id,
+        "organization_id":    user['organization_id'],
+        "name":               data.get('name', ''),
+        "business_name":      data.get('business_name', ''),
+        "platform":           data.get('platform', ''),
+        "status":             data.get('status', 'New Lead'),
+        "last_followup_date": data.get('last_followup_date'),
+        "notes":              data.get('notes', ''),
+        "created_at":         datetime.now(timezone.utc).isoformat()
+    })
+    if result is None:
+        return jsonify({"error": "Failed to create lead"}), 500
+    return jsonify({"Id": result.get('Id'), "id": lead_id, **data}), 201
+
+@app.route('/api/leads/<int:lead_id>', methods=['PUT'])
+def update_lead(lead_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_LEADS:
+        return jsonify({"error": "Leads table not configured"}), 503
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {
+        "Id":                 lead_id,
+        "name":               data.get('name'),
+        "business_name":      data.get('business_name'),
+        "platform":           data.get('platform'),
+        "status":             data.get('status'),
+        "last_followup_date": data.get('last_followup_date'),
+        "notes":              data.get('notes'),
+    })
+    return jsonify({"Id": lead_id, **data})
+
+@app.route('/api/leads/<int:lead_id>', methods=['DELETE'])
+def delete_lead(lead_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_LEADS:
+        return jsonify({"error": "Leads table not configured"}), 503
+
+    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {"Id": lead_id})
+    return jsonify({"message": "Lead deleted"})
 
 # ── Error Logger ──────────────────────────────────────────────────────────────
 
