@@ -481,7 +481,7 @@ def get_leads():
     if error:
         return error, code
     if not NOCODB_TABLE_LEADS:
-        return jsonify({"error": "Leads table not configured"}), 503
+        return jsonify([])   # graceful empty until table is configured
 
     result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records",
                     params={"where": f"(organization_id,eq,{user['organization_id']})",
