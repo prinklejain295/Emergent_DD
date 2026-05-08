@@ -29,8 +29,8 @@ NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
 NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
 NOCODB_TABLE_CLIENT_SERVICES = os.environ.get('NOCODB_TABLE_CLIENT_SERVICES', '')
-NOCODB_TABLE_LEADS      = os.environ.get('NOCODB_TABLE_LEADS', '')
-NOCODB_TABLE_REMINDERS  = os.environ.get('NOCODB_TABLE_REMINDERS', '')
+NOCODB_TABLE_LEADS      = os.environ.get('NOCODB_TABLE_LEADS', '').strip()
+NOCODB_TABLE_REMINDERS  = os.environ.get('NOCODB_TABLE_REMINDERS', '').strip()
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
