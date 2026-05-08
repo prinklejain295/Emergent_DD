@@ -29,7 +29,8 @@ NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
 NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
 NOCODB_TABLE_CLIENT_SERVICES = os.environ.get('NOCODB_TABLE_CLIENT_SERVICES', '')
-NOCODB_TABLE_LEADS = os.environ.get('NOCODB_TABLE_LEADS', '')
+NOCODB_TABLE_LEADS      = os.environ.get('NOCODB_TABLE_LEADS', '')
+NOCODB_TABLE_REMINDERS  = os.environ.get('NOCODB_TABLE_REMINDERS', '')
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
@@ -408,6 +409,69 @@ def delete_client_service(record_id):
 
     nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {"Id": record_id})
     return jsonify({"message": "Service deleted"})
+
+# ── Reminders ─────────────────────────────────────────────────────────────────
+
+@app.route('/api/reminders', methods=['GET'])
+def get_reminders():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_REMINDERS:
+        return jsonify([])   # graceful empty — no 503
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_REMINDERS}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 100})
+    return jsonify(result.get('list', []) if result else [])
+
+@app.route('/api/reminders', methods=['POST'])
+def create_reminder():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_REMINDERS:
+        return jsonify({"error": "Reminders table not configured. Add NOCODB_TABLE_REMINDERS to Vercel."}), 503
+
+    data = request.get_json(force=True) or {}
+    reminder_id = str(uuid.uuid4())
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_REMINDERS}/records", {
+        "id":                reminder_id,
+        "organization_id":   user['organization_id'],
+        "days_before":       data.get('days_before', 7),
+        "notification_time": data.get('notification_time', '09:00'),
+        "is_active":         True,
+        "created_at":        datetime.now(timezone.utc).isoformat()
+    })
+    if result is None:
+        return jsonify({"error": "Failed to create reminder"}), 500
+    return jsonify({"id": reminder_id, **data}), 201
+
+@app.route('/api/reminders/<int:reminder_id>', methods=['DELETE'])
+def delete_reminder(reminder_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_REMINDERS:
+        return jsonify({"error": "Reminders table not configured"}), 503
+
+    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_REMINDERS}/records", {"Id": reminder_id})
+    return jsonify({"message": "Reminder deleted"})
+
+@app.route('/api/reminders/<int:reminder_id>/toggle', methods=['PATCH'])
+def toggle_reminder(reminder_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if not NOCODB_TABLE_REMINDERS:
+        return jsonify({"error": "Reminders table not configured"}), 503
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_REMINDERS}/records",
+                    params={"where": f"(Id,eq,{reminder_id})", "limit": 1})
+    rows = result.get('list', []) if result else []
+    current = rows[0].get('is_active', True) if rows else True
+    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_REMINDERS}/records",
+             {"Id": reminder_id, "is_active": not current})
+    return jsonify({"is_active": not current})
 
 # ── Leads / Pipeline ──────────────────────────────────────────────────────────
 
