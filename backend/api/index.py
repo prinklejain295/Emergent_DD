@@ -470,71 +470,82 @@ def get_team():
 
 @app.route('/api/team', methods=['POST'])
 def add_team_member():
-    user, error, code = get_token()
-    if error:
-        return error, code
-    deny = _require_admin(user)
-    if deny:
-        return deny
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        deny = _require_admin(user)
+        if deny:
+            return deny
 
-    data = request.get_json(force=True) or {}
-    if not data.get('email') or not data.get('name') or not data.get('password'):
-        return jsonify({"error": "Name, email and password are required"}), 400
+        data = request.get_json(force=True) or {}
+        if not data.get('email') or not data.get('name') or not data.get('password'):
+            return jsonify({"error": "Name, email and password are required"}), 400
 
-    # Check email not already in use
-    existing = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
-                      params={"where": f"(email,eq,{data['email']})", "limit": 1})
-    if existing and existing.get('list'):
-        return jsonify({"error": "A user with this email already exists"}), 409
+        existing = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
+                          params={"where": f"(email,eq,{data['email']})", "limit": 1})
+        if existing and (existing.get('list') or []):
+            return jsonify({"error": "A user with this email already exists"}), 409
 
-    member_id = str(uuid.uuid4())
-    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {
-        "id":               member_id,
-        "organization_id":  user['organization_id'],
-        "name":             data.get('name'),
-        "email":            data.get('email'),
-        "password":         hash_password(data.get('password')),
-        "role":             data.get('role', 'consultant'),
-        "assigned_clients": "",
-        "created_at":       datetime.now(timezone.utc).isoformat()
-    })
-    if result is None:
-        return jsonify({"error": "Failed to add team member"}), 500
-    return jsonify({
-        "Id": result.get('Id'), "id": member_id,
-        "name": data['name'], "email": data['email'],
-        "role": data.get('role', 'consultant'), "assigned_clients": ""
-    }), 201
+        member_id = str(uuid.uuid4())
+        result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {
+            "id":               member_id,
+            "organization_id":  user.get('organization_id', ''),
+            "name":             data.get('name'),
+            "email":            data.get('email'),
+            "password":         hash_password(data.get('password')),
+            "role":             data.get('role', 'consultant'),
+            "assigned_clients": "",
+            "created_at":       datetime.now(timezone.utc).isoformat()
+        })
+        if result is None:
+            return jsonify({"error": "Failed to add team member"}), 500
+        return jsonify({
+            "Id": result.get('Id'), "id": member_id,
+            "name": data['name'], "email": data['email'],
+            "role": data.get('role', 'consultant'), "assigned_clients": ""
+        }), 201
+    except Exception as e:
+        print(f"add_team_member error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/team/<int:member_id>', methods=['PUT'])
 def update_team_member(member_id):
-    user, error, code = get_token()
-    if error:
-        return error, code
-    deny = _require_admin(user)
-    if deny:
-        return deny
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        deny = _require_admin(user)
+        if deny:
+            return deny
 
-    data = request.get_json(force=True) or {}
-    update = {"Id": member_id}
-    if 'role' in data:             update['role']             = data['role']
-    if 'assigned_clients' in data: update['assigned_clients'] = data['assigned_clients']
-    if data.get('password'):       update['password']         = hash_password(data['password'])
+        data = request.get_json(force=True) or {}
+        update = {"Id": member_id}
+        if 'role' in data:             update['role']             = data['role']
+        if 'assigned_clients' in data: update['assigned_clients'] = data['assigned_clients']
+        if data.get('password'):       update['password']         = hash_password(data['password'])
 
-    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", update)
-    return jsonify({"message": "Updated"})
+        nc_patch(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", update)
+        return jsonify({"message": "Updated"})
+    except Exception as e:
+        print(f"update_team_member error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/team/<int:member_id>', methods=['DELETE'])
 def remove_team_member(member_id):
-    user, error, code = get_token()
-    if error:
-        return error, code
-    deny = _require_admin(user)
-    if deny:
-        return deny
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        deny = _require_admin(user)
+        if deny:
+            return deny
 
-    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {"Id": member_id})
-    return jsonify({"message": "Team member removed"})
+        nc_delete(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {"Id": member_id})
+        return jsonify({"message": "Team member removed"})
+    except Exception as e:
+        print(f"remove_team_member error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # ── Reminders ─────────────────────────────────────────────────────────────────
 
