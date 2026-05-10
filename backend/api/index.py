@@ -121,7 +121,10 @@ def register():
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     
-    token = create_jwt_token({"user_id": user_id, "email": data.get('email'), "organization_id": org_id})
+    token = create_jwt_token({
+        "user_id": user_id, "email": data.get('email'),
+        "organization_id": org_id, "role": "admin", "assigned_clients": ""
+    })
     return jsonify({
         "access_token": token, "token_type": "bearer",
         "user": {"id": user_id, "email": data.get('email'), "name": data.get('name'), "role": "admin"},
@@ -144,10 +147,15 @@ def login():
     if not verify_password(password, user.get('password', '')):
         return jsonify({"error": "Invalid credentials"}), 401
     
-    token = create_jwt_token({"user_id": user['id'], "email": user['email'], "organization_id": user['organization_id']})
+    token = create_jwt_token({
+        "user_id": user['id'], "email": user['email'],
+        "organization_id": user['organization_id'],
+        "role": user.get('role', 'admin'),
+        "assigned_clients": user.get('assigned_clients', '')
+    })
     return jsonify({
         "access_token": token, "token_type": "bearer",
-        "user": {"id": user['id'], "email": user['email'], "name": user['name'], "role": user.get('role', 'member')},
+        "user": {"id": user['id'], "email": user['email'], "name": user['name'], "role": user.get('role', 'admin')},
         "organization": {"id": user['organization_id'], "name": "My Organization"}
     })
 
@@ -184,15 +192,28 @@ def get_stats():
                 stats["upcoming_due_dates"].append(dd)
     return jsonify(stats)
 
+def _assigned_ids(user):
+    """Return set of assigned client NocoDB Ids for a consultant, or None if not restricted."""
+    if user.get('role', 'admin') != 'consultant':
+        return None  # no restriction
+    raw = user.get('assigned_clients', '') or ''
+    return {s.strip() for s in raw.split(',') if s.strip()}
+
 @app.route('/api/clients', methods=['GET'])
 def get_clients():
     user, error, code = get_token()
     if error:
         return error, code
-    
+
     result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
                     params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 1000})
-    return jsonify(result.get('list', []) if result else [])
+    clients = result.get('list', []) if result else []
+
+    assigned = _assigned_ids(user)
+    if assigned is not None:
+        clients = [c for c in clients if str(c.get('Id', '')) in assigned]
+
+    return jsonify(clients)
 
 @app.route('/api/clients', methods=['POST'])
 def create_client():
@@ -337,7 +358,18 @@ def get_client_services():
     result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records",
                     params={"where": f"(organization_id,eq,{user['organization_id']})",
                             "limit": 1000, "sort": "-created_at"})
-    return jsonify(result.get('list', []) if result else [])
+    services = result.get('list', []) if result else []
+
+    assigned = _assigned_ids(user)
+    if assigned is not None:
+        # Resolve assigned client names from NocoDB Ids
+        cr = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 1000})
+        all_clients = cr.get('list', []) if cr else []
+        allowed_names = {c['name'] for c in all_clients if str(c.get('Id', '')) in assigned}
+        services = [s for s in services if s.get('client_name') in allowed_names]
+
+    return jsonify(services)
 
 @app.route('/api/client-services', methods=['POST'])
 def create_client_service():
@@ -409,6 +441,96 @@ def delete_client_service(record_id):
 
     nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records", {"Id": record_id})
     return jsonify({"message": "Service deleted"})
+
+# ── Team Management ───────────────────────────────────────────────────────────
+
+def _require_admin(user):
+    if user.get('role', 'admin') != 'admin':
+        return jsonify({"error": "Admin access required"}), 403
+    return None
+
+@app.route('/api/team', methods=['GET'])
+def get_team():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    if user.get('role', 'admin') not in ('admin', 'manager'):
+        return jsonify({"error": "Not authorized"}), 403
+
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 100})
+    members = result.get('list', []) if result else []
+    # Strip passwords before returning
+    safe = [{k: v for k, v in m.items() if k != 'password'} for m in members]
+    return jsonify(safe)
+
+@app.route('/api/team', methods=['POST'])
+def add_team_member():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    deny = _require_admin(user)
+    if deny:
+        return deny
+
+    data = request.get_json(force=True) or {}
+    if not data.get('email') or not data.get('name') or not data.get('password'):
+        return jsonify({"error": "Name, email and password are required"}), 400
+
+    # Check email not already in use
+    existing = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
+                      params={"where": f"(email,eq,{data['email']})", "limit": 1})
+    if existing and existing.get('list'):
+        return jsonify({"error": "A user with this email already exists"}), 409
+
+    member_id = str(uuid.uuid4())
+    result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {
+        "id":               member_id,
+        "organization_id":  user['organization_id'],
+        "name":             data.get('name'),
+        "email":            data.get('email'),
+        "password":         hash_password(data.get('password')),
+        "role":             data.get('role', 'consultant'),
+        "assigned_clients": "",
+        "created_at":       datetime.now(timezone.utc).isoformat()
+    })
+    if result is None:
+        return jsonify({"error": "Failed to add team member"}), 500
+    return jsonify({
+        "Id": result.get('Id'), "id": member_id,
+        "name": data['name'], "email": data['email'],
+        "role": data.get('role', 'consultant'), "assigned_clients": ""
+    }), 201
+
+@app.route('/api/team/<int:member_id>', methods=['PUT'])
+def update_team_member(member_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    deny = _require_admin(user)
+    if deny:
+        return deny
+
+    data = request.get_json(force=True) or {}
+    update = {"Id": member_id}
+    if 'role' in data:             update['role']             = data['role']
+    if 'assigned_clients' in data: update['assigned_clients'] = data['assigned_clients']
+    if data.get('password'):       update['password']         = hash_password(data['password'])
+
+    nc_patch(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", update)
+    return jsonify({"message": "Updated"})
+
+@app.route('/api/team/<int:member_id>', methods=['DELETE'])
+def remove_team_member(member_id):
+    user, error, code = get_token()
+    if error:
+        return error, code
+    deny = _require_admin(user)
+    if deny:
+        return deny
+
+    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {"Id": member_id})
+    return jsonify({"message": "Team member removed"})
 
 # ── Reminders ─────────────────────────────────────────────────────────────────
 

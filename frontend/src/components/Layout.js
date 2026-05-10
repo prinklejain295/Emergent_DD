@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList, Target } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList, Target, Settings } from 'lucide-react';
 
 export default function Layout({ children, user, organization, onLogout }) {
   const location = useLocation();
@@ -54,8 +54,20 @@ export default function Layout({ children, user, organization, onLogout }) {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-purple-800/40">
+      {/* Settings + Logout */}
+      <div className="p-4 border-t border-purple-800/40 space-y-1">
+        <Link
+          to="/settings"
+          onClick={onLinkClick}
+          className={`flex items-center space-x-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm ${
+            location.pathname === '/settings'
+              ? 'bg-white/15 text-white'
+              : 'text-purple-300 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          <Settings size={19} />
+          <span>Settings</span>
+        </Link>
         <button
           onClick={onLogout}
           data-testid="logout-button"

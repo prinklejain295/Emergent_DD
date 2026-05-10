@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ClientsPage from './pages/ClientsPage';
 import ClientServicesPage from './pages/ClientServicesPage';
 import LeadsPage from './pages/LeadsPage';
+import SettingsPage from './pages/SettingsPage';
 import RemindersPage from './pages/RemindersPage';
 import CalendarPage from './pages/CalendarPage';
 import Layout from './components/Layout';
@@ -103,6 +104,18 @@ function App() {
               isAuthenticated ? (
                 <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <ClientServicesPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              isAuthenticated ? (
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
+                  <SettingsPage />
                 </Layout>
               ) : (
                 <Navigate to="/login" replace />
