@@ -42,12 +42,12 @@ const TAG_COLORS = {
   'United Kingdom': { bg: '#CCE5FF', text: '#004085', border: '#B8D4FF' },
   'UAE':            { bg: '#D4EDDA', text: '#155724', border: '#C3E6CB' },
   'Canada':         { bg: '#FFE4E4', text: '#7B1D1D', border: '#FFCCCC' },
-  'Australia':      { bg: '#E8D5FF', text: '#4C1D95', border: '#DDD6FE' },
+  'Australia':      { bg: '#E8D5FF', text: '#111827', border: '#E5E7EB' },
   'Singapore':      { bg: '#FFF0F0', text: '#9B1C1C', border: '#FECACA' },
   'Germany':        { bg: '#F0F4C3', text: '#5D4037', border: '#E6EE9C' },
   'Other':          { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' },
 };
-const getTagStyle = (tag) => TAG_COLORS[tag] || { bg: '#EDE9FE', text: '#5B21B6', border: '#DDD6FE' };
+const getTagStyle = (tag) => TAG_COLORS[tag] || { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
 
 const EMPTY = {
   type: 'individual', name: '', doing_business_as: '', company: '',
@@ -104,13 +104,13 @@ const TagPills = ({ tags, max = 3 }) => {
 const ColFilter = ({ value, onChange, placeholder, type = 'text', options }) =>
   type === 'select' ? (
     <select value={value} onChange={e => onChange(e.target.value)}
-            className="w-full text-xs border border-[#DDD6FE] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#7C3AED] cursor-pointer">
+            className="w-full text-xs border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-gray-900 cursor-pointer">
       {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   ) : (
     <input type="text" value={value} onChange={e => onChange(e.target.value)}
            placeholder={placeholder}
-           className="w-full text-xs border border-[#DDD6FE] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#7C3AED] placeholder-gray-400" />
+           className="w-full text-xs border border-[#E5E7EB] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-gray-900 placeholder-gray-400" />
   );
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -172,7 +172,12 @@ export default function ClientsPage() {
 
   const set = (key, val) => {
     setFormData(f => ({ ...f, [key]: val }));
-    if (formErrors[key]) setFormErrors(e => ({ ...e, [key]: undefined }));
+    if (key === 'email') {
+      const ok = !val || emailRx.test(val.trim());
+      setFormErrors(e => ({ ...e, email: ok ? undefined : 'Enter a valid email address (e.g. name@domain.com)' }));
+    } else if (formErrors[key]) {
+      setFormErrors(e => ({ ...e, [key]: undefined }));
+    }
   };
   const toggleTag = (tag) =>
     setFormData(f => ({ ...f, tags: f.tags.includes(tag) ? f.tags.filter(t => t !== tag) : [...f.tags, tag] }));
@@ -247,7 +252,7 @@ export default function ClientsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -291,20 +296,20 @@ export default function ClientsPage() {
           <option value="email-asc">Email A→Z</option>
         </select>
         {/* View toggle */}
-        <div className="flex rounded-xl border-2 border-[#DDD6FE] overflow-hidden h-10 self-center">
-          <button onClick={() => setViewMode('board')} className={`px-3 flex items-center transition-colors ${viewMode === 'board' ? 'bg-[#7C3AED] text-white' : 'bg-white text-[#6B7280] hover:bg-[#EDE9FE]'}`}><LayoutGrid size={16} /></button>
-          <button onClick={() => setViewMode('list')}  className={`px-3 flex items-center transition-colors ${viewMode === 'list'  ? 'bg-[#7C3AED] text-white' : 'bg-white text-[#6B7280] hover:bg-[#EDE9FE]'}`}><List size={16} /></button>
+        <div className="flex rounded-xl border-2 border-[#E5E7EB] overflow-hidden h-10 self-center">
+          <button onClick={() => setViewMode('board')} className={`px-3 flex items-center transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}><LayoutGrid size={16} /></button>
+          <button onClick={() => setViewMode('list')}  className={`px-3 flex items-center transition-colors ${viewMode === 'list'  ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}><List size={16} /></button>
         </div>
       </div>
 
       {/* Empty state */}
       {displayed.length === 0 ? (
         <div className="card p-14 text-center">
-          <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EDE9FE,#DDD6FE)' }}>
-            <Building size={36} className="text-[#7C3AED]" />
+          <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#F3F4F6,#E5E7EB)' }}>
+            <Building size={36} className="text-gray-600" />
           </div>
           <h3 className="text-xl font-semibold text-[#374151] mb-2">No clients found</h3>
-          <p className="text-[#6B7280] mb-6">{search || filterType !== 'all' || filterTag !== 'all' ? 'Try adjusting filters' : 'Add your first client to get started'}</p>
+          <p className="text-gray-500 mb-6">{search || filterType !== 'all' || filterTag !== 'all' ? 'Try adjusting filters' : 'Add your first client to get started'}</p>
           {!search && filterType === 'all' && filterTag === 'all' && <button onClick={openAdd} className="btn-primary">Add First Client</button>}
         </div>
 
@@ -319,9 +324,9 @@ export default function ClientsPage() {
                   {getInitials(c)}
                 </div>
                 <div className="min-w-0">
-                  {c.type === 'business' && c.company && <p className="font-bold text-[#4C1D95] truncate text-sm">{c.company}</p>}
-                  <p className={`truncate ${c.type === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-[#4C1D95] text-sm'}`}>{c.name}</p>
-                  {c.type === 'individual' && c.doing_business_as && <p className="text-xs text-[#7C3AED] truncate">DBA: {c.doing_business_as}</p>}
+                  {c.type === 'business' && c.company && <p className="font-bold text-[#111827] truncate text-sm">{c.company}</p>}
+                  <p className={`truncate ${c.type === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-[#111827] text-sm'}`}>{c.name}</p>
+                  {c.type === 'individual' && c.doing_business_as && <p className="text-xs text-gray-600 truncate">DBA: {c.doing_business_as}</p>}
                 </div>
               </div>
               <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full mb-3 ${c.type === 'business' ? 'bg-violet-100 text-violet-700' : 'bg-pink-50 text-pink-700'}`}>
@@ -329,12 +334,12 @@ export default function ClientsPage() {
                 {c.type === 'business' ? 'Business' : 'Individual'}
               </span>
               <div className="space-y-1.5 text-sm text-gray-600 mb-3">
-                <div className="flex items-center gap-2 truncate"><Mail size={13} className="text-[#7C3AED] flex-shrink-0" /><span className="truncate">{c.email || '—'}</span></div>
-                {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-[#7C3AED] flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
+                <div className="flex items-center gap-2 truncate"><Mail size={13} className="text-gray-600 flex-shrink-0" /><span className="truncate">{c.email || '—'}</span></div>
+                {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-gray-600 flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
               </div>
               {c.tags && <div className="mb-4"><TagPills tags={c.tags} /></div>}
-              <div className="flex gap-2 pt-3 border-t border-[#EDE9FE] opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-[#5B21B6] hover:bg-[#EDE9FE] rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>
+              <div className="flex gap-2 pt-3 border-t border-[#F3F4F6] opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEdit(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-[#374151] hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>
                 <button onClick={() => handleDelete(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
@@ -345,16 +350,16 @@ export default function ClientsPage() {
         /* ── LIST VIEW ──────────────────────────────────────────── */
         <div className="card overflow-hidden">
           {activeColFilters > 0 && (
-            <div className="px-4 py-2 bg-[#EDE9FE] border-b border-[#DDD6FE] flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#5B21B6]">{activeColFilters} column filter{activeColFilters > 1 ? 's' : ''} active</span>
-              <button onClick={() => setCf({ name: '', type: 'all', company: '', email: '', tags: 'all' })} className="text-xs text-[#7C3AED] hover:underline ml-auto">Clear all</button>
+            <div className="px-4 py-2 bg-[#F3F4F6] border-b border-[#E5E7EB] flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#374151]">{activeColFilters} column filter{activeColFilters > 1 ? 's' : ''} active</span>
+              <button onClick={() => setCf({ name: '', type: 'all', company: '', email: '', tags: 'all' })} className="text-xs text-gray-600 hover:underline ml-auto">Clear all</button>
             </div>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 {/* Column headers */}
-                <tr style={{ background: 'linear-gradient(135deg,#4C1D95,#6D28D9)' }}>
+                <tr style={{ background: '#111827' }}>
                   {[['name','Name'],['type','Type'],['company','Company / DBA'],['email','Email'],['phone','Phone'],['tags','Countries'],['','']].map(([key, label]) => (
                     <th key={key} onClick={() => key && toggleSort(key)}
                         className={`px-4 py-3.5 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}>
@@ -363,7 +368,7 @@ export default function ClientsPage() {
                   ))}
                 </tr>
                 {/* Column filter row */}
-                <tr className="border-b border-[#DDD6FE]" style={{ backgroundColor: '#F5F3FF' }}>
+                <tr className="border-b border-[#E5E7EB]" style={{ backgroundColor: '#F9FAFB' }}>
                   <th className="px-3 py-2 font-normal"><ColFilter value={cf.name} onChange={v => setColFilter('name', v)} placeholder="Filter name…" /></th>
                   <th className="px-3 py-2 font-normal">
                     <ColFilter type="select" value={cf.type} onChange={v => setColFilter('type', v)}
@@ -381,13 +386,13 @@ export default function ClientsPage() {
               </thead>
               <tbody>
                 {displayed.map((c, i) => (
-                  <tr key={c.id || i} className="group border-b border-[#EDE9FE] hover:bg-[#F5F3FF] transition-colors">
+                  <tr key={c.id || i} className="group border-b border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: GRADIENTS[i % GRADIENTS.length] }}>{getInitials(c)}</div>
                         <div>
-                          <p className="font-semibold text-[#4C1D95] leading-tight">{c.name}</p>
-                          {c.doing_business_as && <p className="text-xs text-[#7C3AED]">DBA: {c.doing_business_as}</p>}
+                          <p className="font-semibold text-[#111827] leading-tight">{c.name}</p>
+                          {c.doing_business_as && <p className="text-xs text-gray-600">DBA: {c.doing_business_as}</p>}
                         </div>
                       </div>
                     </td>
@@ -403,7 +408,7 @@ export default function ClientsPage() {
                     <td className="px-4 py-3 max-w-[200px]"><TagPills tags={c.tags} /></td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-[#EDE9FE] rounded-lg"><Edit2 size={14} className="text-[#6B7280]" /></button>
+                        <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-gray-50 rounded-lg"><Edit2 size={14} className="text-gray-500" /></button>
                         <button onClick={() => handleDelete(c)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-500" /></button>
                       </div>
                     </td>
@@ -412,7 +417,7 @@ export default function ClientsPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2.5 text-xs text-[#6B7280] border-t border-[#EDE9FE]" style={{ backgroundColor: '#F5F3FF' }}>
+          <div className="px-4 py-2.5 text-xs text-gray-500 border-t border-[#F3F4F6]" style={{ backgroundColor: '#F9FAFB' }}>
             {displayed.length} of {clients.length} client{clients.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -423,10 +428,10 @@ export default function ClientsPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl flex flex-col max-h-[94vh] overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-                 style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED)' }}>
+                 style={{ background: '#111827' }}>
               <div>
                 <h2 className="text-lg font-bold text-white">{editingClient ? 'Edit Client' : 'Add New Client'}</h2>
-                <p className="text-purple-300 text-xs mt-0.5">All fields marked * are required</p>
+                <p className="text-slate-300 text-xs mt-0.5">All fields marked * are required</p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg transition-colors"><X size={20} /></button>
             </div>
@@ -443,8 +448,8 @@ export default function ClientsPage() {
                     { val: 'business', label: 'Business', icon: Building, desc: 'Company / firm / LLP' },
                   ].map(({ val, label, icon: Icon, desc }) => (
                     <button key={val} type="button" onClick={() => set('type', val)}
-                            className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${formData.type === val ? 'border-[#7C3AED] bg-[#EDE9FE]' : 'border-[#DDD6FE] hover:border-[#A855F7]'}`}>
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.type === val ? 'bg-[#7C3AED] text-white' : 'bg-[#EDE9FE] text-[#5B21B6]'}`}><Icon size={18} /></div>
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${formData.type === val ? 'border-gray-900 bg-[#F3F4F6]' : 'border-[#E5E7EB] hover:border-gray-500'}`}>
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.type === val ? 'bg-gray-900 text-white' : 'bg-[#F3F4F6] text-[#374151]'}`}><Icon size={18} /></div>
                       <div><p className="font-semibold text-sm">{label}</p><p className="text-xs text-gray-500">{desc}</p></div>
                     </button>
                   ))}
@@ -496,9 +501,9 @@ export default function ClientsPage() {
                 <div>
                   <label className="label">Phone Number *</label>
                   {/* Joined input: narrow code selector + wide number input */}
-                  <div className={`flex rounded-xl overflow-hidden border-2 transition-all focus-within:border-[#7C3AED] focus-within:shadow-[0_0_0_4px_rgba(124,58,237,0.12)] ${formErrors.phone ? 'border-red-400' : 'border-[#DDD6FE]'}`}>
+                  <div className={`flex rounded-xl overflow-hidden border-2 transition-all focus-within:border-gray-900 focus-within:shadow-[0_0_0_4px_rgba(0,0,0,0.08)] ${formErrors.phone ? 'border-red-400' : 'border-[#E5E7EB]'}`}>
                     <select value={formData.phone_code} onChange={e => set('phone_code', e.target.value)}
-                            className="bg-[#F5F3FF] text-sm font-semibold text-[#4C1D95] border-r border-[#DDD6FE] focus:outline-none cursor-pointer px-2"
+                            className="bg-[#F9FAFB] text-sm font-semibold text-[#111827] border-r border-[#E5E7EB] focus:outline-none cursor-pointer px-2"
                             style={{ width: '68px', flexShrink: 0 }}>
                       {PHONE_CODES.map(p => (
                         <option key={p.code + p.country} value={p.code}>{p.code}</option>
@@ -522,11 +527,11 @@ export default function ClientsPage() {
                     <ChevronDown size={15} className="text-gray-400 flex-shrink-0" />
                   </button>
                   {showTagMenu && (
-                    <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#DDD6FE] rounded-xl shadow-xl z-20 p-2 max-h-48 overflow-y-auto">
+                    <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[#E5E7EB] rounded-xl shadow-xl z-20 p-2 max-h-48 overflow-y-auto">
                       {COUNTRY_TAGS.map(tag => (
                         <button key={tag} type="button" onClick={() => toggleTag(tag)}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[#F5F3FF] transition-colors">
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${formData.tags.includes(tag) ? 'bg-[#7C3AED] border-[#7C3AED]' : 'border-gray-300'}`}>
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[#F9FAFB] transition-colors">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${formData.tags.includes(tag) ? 'bg-gray-900 border-gray-900' : 'border-gray-300'}`}>
                             {formData.tags.includes(tag) && <span className="text-white text-xs leading-none">✓</span>}
                           </div>
                           <span className="flex-1 text-left text-gray-700">{tag}</span>

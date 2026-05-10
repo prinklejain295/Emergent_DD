@@ -95,12 +95,12 @@ export default function RemindersPage() {
       </div>
 
       {/* Info Card */}
-      <div className="card p-6 mb-6 bg-[#EDE9FE] border-[#A855F7]">
-        <h3 className="font-semibold text-[#5B21B6] mb-2 flex items-center space-x-2">
+      <div className="card p-6 mb-6 bg-[#F3F4F6] border-[#A855F7]">
+        <h3 className="font-semibold text-[#374151] mb-2 flex items-center space-x-2">
           <Clock size={20} />
           <span>How Reminders Work</span>
         </h3>
-        <p className="text-sm text-[#5B21B6]">
+        <p className="text-sm text-[#374151]">
           Reminders are automatically sent to both you and your clients based on the schedule you set. 
           For example, a "7 days before" reminder will send emails 7 days prior to each due date.
         </p>
@@ -125,7 +125,7 @@ export default function RemindersPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-[#5B21B6] mb-2">
+                  <h3 className="text-2xl font-bold text-[#374151] mb-2">
                     {reminder.days_before} {reminder.days_before === 1 ? 'day' : 'days'}
                   </h3>
                   <p className="text-sm text-[#6B7280]">before due date</p>
@@ -173,7 +173,7 @@ export default function RemindersPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6" data-testid="reminder-modal">
-            <h2 className="text-2xl font-bold text-[#5B21B6] mb-6">Add Reminder Schedule</h2>
+            <h2 className="text-2xl font-bold text-[#374151] mb-6">Add Reminder Schedule</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="label">Days Before Due Date *</label>

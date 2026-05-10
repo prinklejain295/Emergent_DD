@@ -305,7 +305,7 @@ export default function ClientServicesPage() {
   /* ── RENDER ─────────────────────────────────────────────────────────── */
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -372,14 +372,14 @@ export default function ClientServicesPage() {
             onClick={() => setShowFilters(f => !f)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
               activeFilterCount > 0
-                ? 'bg-[#EDE9FE] border-[#7C3AED] text-[#5B21B6]'
-                : 'bg-white border-[#DDD6FE] text-[#6B7280] hover:border-[#7C3AED] hover:text-[#5B21B6]'
+                ? 'bg-[#F3F4F6] border-gray-900 text-[#374151]'
+                : 'bg-white border-[#E5E7EB] text-gray-500 hover:border-gray-900 hover:text-[#374151]'
             }`}
           >
             <Filter size={14} />
             Filters
             {activeFilterCount > 0 && (
-              <span className="bg-[#7C3AED] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+              <span className="bg-gray-900 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -387,7 +387,7 @@ export default function ClientServicesPage() {
           </button>
 
           {activeFilterCount > 0 && (
-            <button onClick={clearFilters} className="text-sm text-[#6B7280] hover:text-red-500 flex items-center gap-1 transition-colors">
+            <button onClick={clearFilters} className="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1 transition-colors">
               <X size={13} /> Clear
             </button>
           )}
@@ -395,7 +395,7 @@ export default function ClientServicesPage() {
 
         {/* Expandable filter panel */}
         {showFilters && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t border-[#EDE9FE]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t border-[#F3F4F6]">
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Service Category</label>
               <select className="input-field text-sm h-9" value={filters.service_category} onChange={e => setFilter('service_category', e.target.value)}>
@@ -441,7 +441,7 @@ export default function ClientServicesPage() {
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="card p-14 text-center">
-          <p className="text-[#6B7280] mb-4 text-lg">
+          <p className="text-gray-500 mb-4 text-lg">
             {activeFilterCount > 0 || filters.client_name
               ? 'No services match your filters'
               : 'No services yet — add one or import from Excel'}
@@ -461,7 +461,7 @@ export default function ClientServicesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr style={{ backgroundColor: '#4C1D95' }}>
+                <tr style={{ backgroundColor: '#111827' }}>
                   {['Client Name','Service Category','Assignee','SPOC','Internal Due Date','Due Date (Regulatory)','Fees Status','Status',''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-white font-semibold whitespace-nowrap text-xs tracking-wide uppercase">
                       {h}
@@ -471,17 +471,17 @@ export default function ClientServicesPage() {
               </thead>
               <tbody>
                 {filtered.map((rec, i) => (
-                  <tr key={rec.Id || i} className="group border-b border-[#EDE9FE] hover:bg-[#F5F3FF] transition-colors">
+                  <tr key={rec.Id || i} className="group border-b border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
 
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-[#5B21B6]">{rec.client_name || '—'}</span>
+                        <span className="font-semibold text-[#374151]">{rec.client_name || '—'}</span>
                         <button
                           onClick={() => openAdd(rec.client_name)}
                           title="Add another service for this client"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-[#EDE9FE] rounded"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-50 rounded"
                         >
-                          <Plus size={11} className="text-[#7C3AED]" />
+                          <Plus size={11} className="text-gray-600" />
                         </button>
                       </div>
                     </td>
@@ -492,7 +492,7 @@ export default function ClientServicesPage() {
                       {rec.assignee
                         ? <div className="flex flex-wrap gap-1">
                             {rec.assignee.split(',').map((a, j) => (
-                              <span key={j} className="bg-[#EDE9FE] text-[#5B21B6] text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                              <span key={j} className="bg-[#F3F4F6] text-[#374151] text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
                                 {a.trim()}
                               </span>
                             ))}
@@ -507,7 +507,7 @@ export default function ClientServicesPage() {
 
                     <td className="px-4 py-3 whitespace-nowrap">
                       {rec.fees_status
-                        ? <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs px-2.5 py-1 rounded-full font-medium">
+                        ? <span className="bg-gray-50 text-gray-700 border border-gray-200 text-xs px-2.5 py-1 rounded-full font-medium">
                             {rec.fees_status}
                           </span>
                         : <span className="text-gray-400">—</span>}
@@ -521,8 +521,8 @@ export default function ClientServicesPage() {
                           : <span className="text-gray-400">—</span>}
                         {(rec.is_recurring === true || rec.is_recurring === 'true') && (
                           <div className="flex items-center gap-1">
-                            <RefreshCw size={10} className="text-[#7C3AED]" />
-                            <span className="text-xs text-[#7C3AED] font-medium">{rec.recurrence_frequency || 'Recurring'}</span>
+                            <RefreshCw size={10} className="text-gray-600" />
+                            <span className="text-xs text-gray-600 font-medium">{rec.recurrence_frequency || 'Recurring'}</span>
                           </div>
                         )}
                       </div>
@@ -533,12 +533,12 @@ export default function ClientServicesPage() {
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {(rec.is_recurring === true || rec.is_recurring === 'true') && (
                           <button onClick={() => handleRenew(rec)} title={`Renew next ${rec.recurrence_frequency || 'cycle'}`}
-                                  className="p-1.5 hover:bg-[#EDE9FE] rounded-lg">
-                            <RefreshCw size={14} className="text-[#7C3AED]" />
+                                  className="p-1.5 hover:bg-gray-50 rounded-lg">
+                            <RefreshCw size={14} className="text-gray-600" />
                           </button>
                         )}
-                        <button onClick={() => openEdit(rec)} className="p-1.5 hover:bg-[#EDE9FE] rounded-lg" title="Edit">
-                          <Edit2 size={14} className="text-[#6B7280]" />
+                        <button onClick={() => openEdit(rec)} className="p-1.5 hover:bg-gray-50 rounded-lg" title="Edit">
+                          <Edit2 size={14} className="text-gray-500" />
                         </button>
                         <button onClick={() => handleDelete(rec)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Delete">
                           <Trash2 size={14} className="text-red-500" />
@@ -550,7 +550,7 @@ export default function ClientServicesPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2.5 bg-[#F5F3FF] border-t border-[#EDE9FE] text-xs text-[#6B7280]">
+          <div className="px-4 py-2.5 bg-[#F9FAFB] border-t border-[#F3F4F6] text-xs text-gray-500">
             Showing {filtered.length} of {records.length} service{records.length !== 1 ? 's' : ''}
             {activeFilterCount > 0 && ` · ${activeFilterCount} filter${activeFilterCount !== 1 ? 's' : ''} active`}
           </div>
@@ -561,7 +561,7 @@ export default function ClientServicesPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-2xl flex flex-col max-h-[92vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: '#4C1D95' }}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: '#111827' }}>
               <h2 className="text-lg font-bold text-white">
                 {editingRecord ? 'Edit Service' : 'Add New Service'}
               </h2>
@@ -632,9 +632,9 @@ export default function ClientServicesPage() {
               </div>
 
               {/* Recurring toggle */}
-              <div className={`flex flex-wrap items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${formData.is_recurring ? 'border-[#7C3AED] bg-[#EDE9FE]' : 'border-[#DDD6FE] bg-[#F5F3FF]'}`}
+              <div className={`flex flex-wrap items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${formData.is_recurring ? 'border-gray-900 bg-[#F3F4F6]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}
                    onClick={() => setFormData(f => ({ ...f, is_recurring: !f.is_recurring }))}>
-                <div className={`w-10 h-6 rounded-full transition-all relative flex-shrink-0 ${formData.is_recurring ? 'bg-[#7C3AED]' : 'bg-gray-300'}`}>
+                <div className={`w-10 h-6 rounded-full transition-all relative flex-shrink-0 ${formData.is_recurring ? 'bg-gray-900' : 'bg-gray-300'}`}>
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.is_recurring ? 'left-5' : 'left-1'}`} />
                 </div>
                 <div className="flex-1">

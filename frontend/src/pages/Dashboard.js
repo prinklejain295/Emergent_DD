@@ -50,7 +50,7 @@ const STAT_GRADIENTS = [
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-[#DDD6FE] rounded-2xl shadow-xl p-3 text-sm min-w-[130px]">
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl shadow-xl p-3 text-sm min-w-[130px]">
       {label && <p className="font-semibold text-gray-900 mb-1.5">{label}</p>}
       {payload.map((p, i) => (
         <div key={i} className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
       {/* ── Welcome Banner ──────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl p-7 text-white"
-           style={{ background: 'linear-gradient(135deg, #4C1D95 0%, #7C3AED 50%, #A855F7 100%)' }}>
+           style={{ background: 'linear-gradient(135deg, #111827 0%, #7C3AED 50%, #A855F7 100%)' }}>
         {/* Decorative shapes */}
         <svg className="absolute right-0 top-0 opacity-10" width="240" height="160" viewBox="0 0 240 160" fill="none">
           <circle cx="200" cy="-20" r="100" stroke="white" strokeWidth="2" />
@@ -219,9 +219,9 @@ export default function Dashboard() {
           <path d="M0 50 Q75 10 150 50 Q225 90 300 50 L300 80 L0 80 Z" fill="white" />
         </svg>
         <div className="relative z-10">
-          <p className="text-purple-200 text-sm font-medium mb-1">{greeting} 👋</p>
+          <p className="text-slate-200 text-sm font-medium mb-1">{greeting} 👋</p>
           <h1 className="text-3xl font-bold mb-1">{userName || 'Welcome back'}</h1>
-          <p className="text-purple-200 text-sm">
+          <p className="text-slate-200 text-sm">
             {services.length} service{services.length !== 1 ? 's' : ''} tracked · {clients.length} client{clients.length !== 1 ? 's' : ''} · {stats.overdueCount > 0 ? `⚠️ ${stats.overdueCount} overdue` : '✅ No overdue items'}
           </p>
         </div>
@@ -377,10 +377,10 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={completedBilling} layout="vertical" barSize={18}
                         margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#EDE9FE" />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F3F4F6" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6B7280' }} width={100} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: '#F5F3FF' }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: '#F9FAFB' }} />
                 <Bar dataKey="count" radius={[0, 6, 6, 0]}>
                   {completedBilling.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -400,8 +400,8 @@ export default function Dashboard() {
           <div className="absolute bottom-0 right-0 w-40 h-40 opacity-[0.04]"
                style={{ background: 'radial-gradient(circle, #A855F7 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-100">
-              <Calendar size={18} className="text-purple-600" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
+              <Calendar size={18} className="text-gray-600" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">Upcoming Deadlines</h2>
@@ -420,7 +420,7 @@ export default function Dashboard() {
                   <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#EDE9FE" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis  tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />

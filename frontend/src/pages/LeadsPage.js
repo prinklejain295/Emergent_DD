@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
   Plus, Edit2, Trash2, Search, X, LayoutGrid, List,
   Linkedin, Mail, Globe, Phone, Star, ChevronDown,
-  Calendar, Building2, User, ArrowUpDown, ChevronUp,
+  Calendar, Building2, User, ArrowUpDown, ChevronUp, Upload,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -17,7 +18,7 @@ const PLATFORMS = [
   { value: 'LinkedIn',  icon: Linkedin, color: '#0A66C2', bg: '#E8F0F9' },
   { value: 'Google',    icon: Globe,    color: '#EA4335', bg: '#FDE8E6' },
   { value: 'Yelp',      icon: Star,     color: '#D32323', bg: '#FDEAEA' },
-  { value: 'Email',     icon: Mail,     color: '#7C3AED', bg: '#EDE9FE' },
+  { value: 'Email',     icon: Mail,     color: '#7C3AED', bg: '#F3F4F6' },
   { value: 'Referral',  icon: User,     color: '#059669', bg: '#D1FAE5' },
   { value: 'Cold Call', icon: Phone,    color: '#D97706', bg: '#FEF3C7' },
   { value: 'Other',     icon: Globe,    color: '#6B7280', bg: '#F3F4F6' },
@@ -25,7 +26,7 @@ const PLATFORMS = [
 
 const STATUSES = [
   { label: 'New Lead',       bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE', dot: '#3B82F6' },
-  { label: 'Contacted',      bg: '#EDE9FE', text: '#5B21B6', border: '#DDD6FE', dot: '#7C3AED' },
+  { label: 'Contacted',      bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#7C3AED' },
   { label: 'In Discussion',  bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A', dot: '#F59E0B' },
   { label: 'Proposal Sent',  bg: '#FFEDD5', text: '#9A3412', border: '#FED7AA', dot: '#F97316' },
   { label: 'Negotiating',    bg: '#F3E8FF', text: '#6B21A8', border: '#E9D5FF', dot: '#A855F7' },
@@ -73,6 +74,8 @@ export default function LeadsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData]   = useState(EMPTY);
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef(null);
 
   /* Filters */
   const [search, setSearch]           = useState('');
@@ -143,6 +146,42 @@ export default function LeadsPage() {
     }
   };
 
+  /* Excel import */
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    setImporting(true);
+    try {
+      const data = await file.arrayBuffer();
+      const wb   = XLSX.read(data);
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      if (!rows.length) { toast.error('No data rows found in the file'); return; }
+
+      let created = 0, skipped = 0;
+      for (const row of rows) {
+        const name = String(row['name'] || row['Name'] || row['Contact Name'] || '').trim();
+        if (!name) { skipped++; continue; }
+        const payload = {
+          name,
+          business_name:      String(row['business_name'] || row['Business Name'] || '').trim(),
+          platform:           String(row['platform'] || row['Platform'] || '').trim(),
+          status:             String(row['status'] || row['Status'] || 'New Lead').trim(),
+          last_followup_date: String(row['last_followup_date'] || row['Last Follow-up'] || '').trim() || null,
+          notes:              String(row['notes'] || row['Notes'] || '').trim(),
+        };
+        try {
+          await axios.post(`${API}/leads`, payload, getAuthHeaders());
+          created++;
+        } catch { skipped++; }
+      }
+      toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` (${skipped} skipped)` : ''}`);
+      fetchLeads();
+    } catch (err) {
+      toast.error('Failed to read Excel file');
+    } finally { setImporting(false); }
+  };
+
   /* Quick status change from table */
   const handleStatusChange = async (lead, newStatus) => {
     try {
@@ -188,7 +227,7 @@ export default function LeadsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -202,9 +241,16 @@ export default function LeadsPage() {
           <h1 className="page-title">Leads Pipeline</h1>
           <p className="page-description">{leads.length} lead{leads.length !== 1 ? 's' : ''} · {leads.filter(l => l.status === 'Converted').length} converted</p>
         </div>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2 self-start sm:self-auto">
-          <Plus size={18} /> Add Lead
-        </button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+          <button onClick={() => importRef.current?.click()} disabled={importing}
+                  className="btn-secondary flex items-center gap-2 text-sm py-2 px-4">
+            <Upload size={16} /> {importing ? 'Importing…' : 'Import Excel'}
+          </button>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> Add Lead
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -224,10 +270,10 @@ export default function LeadsPage() {
           {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.value}</option>)}
         </select>
         {/* View toggle */}
-        <div className="flex rounded-xl border-2 border-[#DDD6FE] overflow-hidden h-10 self-center">
+        <div className="flex rounded-xl border-2 border-[#E5E7EB] overflow-hidden h-10 self-center">
           {[['table','≡ Table'],['pipeline','◫ Pipeline']].map(([mode, label]) => (
             <button key={mode} onClick={() => setViewMode(mode)}
-                    className={`px-3 text-xs font-semibold transition-colors ${viewMode === mode ? 'bg-[#7C3AED] text-white' : 'bg-white text-[#6B7280] hover:bg-[#EDE9FE]'}`}>
+                    className={`px-3 text-xs font-semibold transition-colors ${viewMode === mode ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
               {label}
             </button>
           ))}
@@ -241,7 +287,7 @@ export default function LeadsPage() {
           if (!count) return null;
           return (
             <button key={s.label} onClick={() => setFilterStatus(filterStatus === s.label ? 'all' : s.label)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${filterStatus === s.label ? 'ring-2 ring-[#7C3AED] ring-offset-1' : ''}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${filterStatus === s.label ? 'ring-2 ring-gray-900 ring-offset-1' : ''}`}
                     style={{ backgroundColor: s.bg, color: s.text, borderColor: s.border }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.dot }} />
               {s.label} <span className="font-bold ml-0.5">{count}</span>
@@ -253,8 +299,8 @@ export default function LeadsPage() {
       {displayed.length === 0 ? (
         <div className="card p-14 text-center">
           <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
-               style={{ background: 'linear-gradient(135deg,#EDE9FE,#DDD6FE)' }}>
-            <User size={36} className="text-[#7C3AED]" />
+               style={{ background: 'linear-gradient(135deg,#F3F4F6,#E5E7EB)' }}>
+            <User size={36} className="text-gray-600" />
           </div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No leads found</h3>
           <p className="text-gray-500 mb-6">{search || filterStatus !== 'all' || filterPlatform !== 'all' ? 'Try adjusting filters' : 'Start tracking potential clients'}</p>
@@ -268,7 +314,7 @@ export default function LeadsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr style={{ background: 'linear-gradient(135deg,#4C1D95,#6D28D9)' }}>
+                <tr style={{ background: '#111827' }}>
                   {[['name','Name'],['business_name','Business'],['platform','Platform'],['status','Status'],['last_followup_date','Last Follow-up'],['','Notes'],['','']].map(([key, label]) => (
                     <th key={key + label} onClick={() => key && toggleSort(key)}
                         className={`px-4 py-3.5 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}>
@@ -286,7 +332,7 @@ export default function LeadsPage() {
                   const isStale = days !== null && days > 7 && lead.status !== 'Converted' && lead.status !== 'Lost';
 
                   return (
-                    <tr key={lead.Id || i} className="group border-b border-[#EDE9FE] hover:bg-[#F5F3FF] transition-colors">
+                    <tr key={lead.Id || i} className="group border-b border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
                       {/* Name */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
@@ -294,7 +340,7 @@ export default function LeadsPage() {
                                style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
                             {(lead.name || '?')[0].toUpperCase()}
                           </div>
-                          <span className="font-semibold text-[#4C1D95]">{lead.name}</span>
+                          <span className="font-semibold text-[#111827]">{lead.name}</span>
                         </div>
                       </td>
 
@@ -316,7 +362,7 @@ export default function LeadsPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <select value={lead.status || 'New Lead'}
                                 onChange={e => handleStatusChange(lead, e.target.value)}
-                                className="text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                                className="text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900"
                                 style={{ backgroundColor: st.bg, color: st.text, borderColor: st.border }}>
                           {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                         </select>
@@ -344,8 +390,8 @@ export default function LeadsPage() {
                       {/* Actions */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openEdit(lead)} className="p-1.5 hover:bg-[#EDE9FE] rounded-lg" title="Edit">
-                            <Edit2 size={14} className="text-[#6B7280]" />
+                          <button onClick={() => openEdit(lead)} className="p-1.5 hover:bg-gray-50 rounded-lg" title="Edit">
+                            <Edit2 size={14} className="text-gray-500" />
                           </button>
                           <button onClick={() => handleDelete(lead)} className="p-1.5 hover:bg-red-50 rounded-lg" title="Delete">
                             <Trash2 size={14} className="text-red-500" />
@@ -358,7 +404,7 @@ export default function LeadsPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2.5 text-xs text-[#6B7280] border-t border-[#EDE9FE]" style={{ backgroundColor: '#F5F3FF' }}>
+          <div className="px-4 py-2.5 text-xs text-gray-500 border-t border-[#F3F4F6]" style={{ backgroundColor: '#F9FAFB' }}>
             {displayed.length} of {leads.length} lead{leads.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -372,7 +418,7 @@ export default function LeadsPage() {
               {/* Stage header */}
               <div className="flex items-center gap-2 mb-3 px-1">
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: stage.dot }} />
-                <span className="font-bold text-sm text-[#4C1D95]">{stage.label}</span>
+                <span className="font-bold text-sm text-[#111827]">{stage.label}</span>
                 <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: stage.bg, color: stage.text }}>{stage.leads.length}</span>
               </div>
@@ -386,7 +432,7 @@ export default function LeadsPage() {
                   const isStale = days !== null && days > 7 && stage.label !== 'Converted' && stage.label !== 'Lost';
 
                   return (
-                    <div key={lead.Id || i} className="bg-white rounded-2xl border border-[#EDE9FE] p-4 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                    <div key={lead.Id || i} className="bg-white rounded-2xl border border-[#F3F4F6] p-4 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
                       {/* Top color bar */}
                       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: stage.dot }} />
 
@@ -397,10 +443,10 @@ export default function LeadsPage() {
                                style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
                             {(lead.name || '?')[0].toUpperCase()}
                           </div>
-                          <p className="font-semibold text-[#4C1D95] text-sm truncate">{lead.name}</p>
+                          <p className="font-semibold text-[#111827] text-sm truncate">{lead.name}</p>
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          <button onClick={() => openEdit(lead)} className="p-1 hover:bg-[#EDE9FE] rounded-lg"><Edit2 size={12} className="text-[#6B7280]" /></button>
+                          <button onClick={() => openEdit(lead)} className="p-1 hover:bg-gray-50 rounded-lg"><Edit2 size={12} className="text-gray-500" /></button>
                           <button onClick={() => handleDelete(lead)} className="p-1 hover:bg-red-50 rounded-lg"><Trash2 size={12} className="text-red-400" /></button>
                         </div>
                       </div>
@@ -441,10 +487,10 @@ export default function LeadsPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg flex flex-col max-h-[92vh] overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-                 style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED)' }}>
+                 style={{ background: '#111827' }}>
               <div>
                 <h2 className="text-lg font-bold text-white">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
-                <p className="text-purple-300 text-xs mt-0.5">Track a potential client</p>
+                <p className="text-slate-300 text-xs mt-0.5">Track a potential client</p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
             </div>
@@ -469,6 +515,7 @@ export default function LeadsPage() {
                   <label className="label">Platform Met On</label>
                   <div className="grid grid-cols-1 gap-2">
                     <select className="input-field text-sm" value={formData.platform} onChange={e => set('platform', e.target.value)}>
+                      <option value="">— Select platform —</option>
                       {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.value}</option>)}
                     </select>
                     {/* Preview chip */}
@@ -487,6 +534,7 @@ export default function LeadsPage() {
                 <div>
                   <label className="label">Lead Status</label>
                   <select className="input-field text-sm" value={formData.status} onChange={e => set('status', e.target.value)}>
+                    <option value="">— Select status —</option>
                     {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                   </select>
                   {formData.status && (() => {

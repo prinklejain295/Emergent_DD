@@ -25,7 +25,7 @@ const STATUS_STYLE = {
 
 const EVENT_STYLE = {
   internal:   { bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A', dot: '#F59E0B', label: 'Internal' },
-  regulatory: { bg: '#EDE9FE', text: '#5B21B6', border: '#DDD6FE', dot: '#7C3AED', label: 'Regulatory' },
+  regulatory: { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#7C3AED', label: 'Regulatory' },
 };
 
 export default function CalendarPage() {
@@ -125,15 +125,15 @@ export default function CalendarPage() {
       <div className="card p-4 md:p-6">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-[#5B21B6]">{format(currentMonth, 'MMMM yyyy')}</h2>
+          <h2 className="text-xl font-bold text-[#374151]">{format(currentMonth, 'MMMM yyyy')}</h2>
           <div className="flex items-center gap-1">
-            <button onClick={prevMonth} className="p-2 hover:bg-[#EDE9FE] rounded-lg transition-colors">
+            <button onClick={prevMonth} className="p-2 hover:bg-[#F3F4F6] rounded-lg transition-colors">
               <ChevronLeft size={18} className="text-[#6B7280]" />
             </button>
-            <button onClick={goToday} className="px-3 py-1.5 text-xs font-semibold text-[#5B21B6] bg-[#EDE9FE] hover:bg-[#DDD6FE] rounded-lg transition-colors">
+            <button onClick={goToday} className="px-3 py-1.5 text-xs font-semibold text-[#374151] bg-[#F3F4F6] hover:bg-[#E5E7EB] rounded-lg transition-colors">
               Today
             </button>
-            <button onClick={nextMonth} className="p-2 hover:bg-[#EDE9FE] rounded-lg transition-colors">
+            <button onClick={nextMonth} className="p-2 hover:bg-[#F3F4F6] rounded-lg transition-colors">
               <ChevronRight size={18} className="text-[#6B7280]" />
             </button>
           </div>
@@ -163,8 +163,8 @@ export default function CalendarPage() {
                 className={[
                   'min-h-[72px] p-1 rounded-lg border transition-all select-none',
                   !inMonth   ? 'bg-gray-50 opacity-35'  : 'bg-white',
-                  todayFlag  ? 'border-[#7C3AED] border-2' : 'border-[#EDE9FE]',
-                  hasEvts    ? 'cursor-pointer hover:border-[#5B21B6] hover:shadow-md' : '',
+                  todayFlag  ? 'border-[#7C3AED] border-2' : 'border-[#F3F4F6]',
+                  hasEvts    ? 'cursor-pointer hover:border-[#374151] hover:shadow-md' : '',
                 ].join(' ')}
               >
                 {/* Day number */}
@@ -208,7 +208,7 @@ export default function CalendarPage() {
           <div className="bg-white rounded-xl w-full max-w-lg flex flex-col max-h-[80vh] shadow-2xl overflow-hidden">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ backgroundColor: '#4C1D95' }}>
+            <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ backgroundColor: '#111827' }}>
               <div>
                 <h2 className="text-lg font-bold text-white">{format(selectedDay, 'MMMM dd, yyyy')}</h2>
                 <p className="text-white/70 text-xs mt-0.5">{selectedEvents.length} deadline{selectedEvents.length !== 1 ? 's' : ''}</p>
@@ -227,13 +227,13 @@ export default function CalendarPage() {
                 const es = EVENT_STYLE[ev.eventType];
                 const st = STATUS_STYLE[ev.status] || { bg: '#F3F4F6', text: '#374151' };
                 return (
-                  <div key={i} className="border rounded-xl p-4 transition-colors hover:bg-[#F5F3FF]"
+                  <div key={i} className="border rounded-xl p-4 transition-colors hover:bg-[#F9FAFB]"
                     style={{ borderColor: es.border }}>
 
                     {/* Top row */}
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="min-w-0">
-                        <p className="font-bold text-[#5B21B6] text-base truncate">{ev.client_name}</p>
+                        <p className="font-bold text-[#374151] text-base truncate">{ev.client_name}</p>
                         <p className="text-sm text-gray-500">{ev.service_category || '—'}</p>
                       </div>
                       <span
@@ -252,12 +252,12 @@ export default function CalendarPage() {
                         </span>
                       )}
                       {ev.assignee && ev.assignee.split(',').map((a, ai) => (
-                        <span key={ai} className="text-xs bg-[#EDE9FE] text-[#5B21B6] px-2 py-0.5 rounded-full font-medium">
+                        <span key={ai} className="text-xs bg-[#F3F4F6] text-[#374151] px-2 py-0.5 rounded-full font-medium">
                           {a.trim()}
                         </span>
                       ))}
                       {ev.fees_status && (
-                        <span className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-purple-50 text-gray-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
                           {ev.fees_status}
                         </span>
                       )}

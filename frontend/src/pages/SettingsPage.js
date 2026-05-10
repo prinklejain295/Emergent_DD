@@ -411,16 +411,18 @@ export default function SettingsPage() {
                 <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
               </div>
 
-              <form onSubmit={handleAddMember} noValidate className="p-6 space-y-4">
+              <form onSubmit={handleAddMember} noValidate autoComplete="off" className="p-6 space-y-4">
                 <div>
                   <label className="label">Full Name *</label>
                   <input type="text" className="input-field" placeholder="e.g. Rahul Sharma" autoFocus
+                         autoComplete="off"
                          value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
 
                 <div>
                   <label className="label">Email Address *</label>
                   <input type="text" inputMode="email"
+                         autoComplete="off"
                          className={`input-field ${form.email && !emailOk ? 'error' : ''}`}
                          placeholder="rahul@yourfirm.com"
                          value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
@@ -431,6 +433,7 @@ export default function SettingsPage() {
                   <label className="label">Initial Password *</label>
                   <div className="relative">
                     <input type={showPwd ? 'text' : 'password'} className="input-field pr-10" placeholder="Min 8 characters"
+                           autoComplete="new-password"
                            value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
