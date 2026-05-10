@@ -451,18 +451,22 @@ def _require_admin(user):
 
 @app.route('/api/team', methods=['GET'])
 def get_team():
-    user, error, code = get_token()
-    if error:
-        return error, code
-    if user.get('role', 'admin') not in ('admin', 'manager'):
-        return jsonify({"error": "Not authorized"}), 403
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        if user.get('role', 'admin') not in ('admin', 'manager'):
+            return jsonify({"error": "Not authorized"}), 403
 
-    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
-                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 100})
-    members = result.get('list', []) if result else []
-    # Strip passwords before returning
-    safe = [{k: v for k, v in m.items() if k != 'password'} for m in members]
-    return jsonify(safe)
+        result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records",
+                        params={"where": f"(organization_id,eq,{user.get('organization_id','')})", "limit": 100})
+        members = (result.get('list') or []) if result else []
+        # Strip passwords before returning
+        safe = [{k: v for k, v in m.items() if k != 'password'} for m in members if isinstance(m, dict)]
+        return jsonify(safe)
+    except Exception as e:
+        print(f"get_team error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/team', methods=['POST'])
 def add_team_member():
