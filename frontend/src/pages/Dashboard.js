@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { toastMsg } from '../utils/errorLogger';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
@@ -9,7 +10,7 @@ import {
 } from 'recharts';
 import {
   Users, Clock, AlertTriangle, CheckCircle2,
-  TrendingUp, Banknote, Calendar, ArrowUpRight,
+  TrendingUp, Banknote, Calendar, ArrowUpRight, X,
 } from 'lucide-react';
 import { format, addMonths, startOfMonth, isBefore, isAfter, isSameMonth } from 'date-fns';
 
@@ -50,7 +51,7 @@ const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-[#DDD6FE] rounded-2xl shadow-xl p-3 text-sm min-w-[130px]">
-      {label && <p className="font-semibold text-[#4C1D95] mb-1.5">{label}</p>}
+      {label && <p className="font-semibold text-gray-900 mb-1.5">{label}</p>}
       {payload.map((p, i) => (
         <div key={i} className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }} />
@@ -94,10 +95,12 @@ const CardDeco = ({ type }) => {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [clients, setClients]   = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [userName, setUserName] = useState('');
+  const [showList, setShowList] = useState(null); // 'pending' | 'unbilled' | 'overdue'
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('user') || '{}');
@@ -123,19 +126,20 @@ export default function Dashboard() {
   /* ── Derived stats ────────────────────────────────────────────── */
   const stats = useMemo(() => {
     const now = new Date();
-    const pending   = services.filter(s => s.status !== 'Done');
-    const completed = services.filter(s => s.status === 'Done');
-    const unbilled  = completed.filter(s => s.fees_status !== 'Post Payment');
-    const overdue   = services.filter(s => {
+    const pendingList  = services.filter(s => s.status !== 'Done');
+    const completed    = services.filter(s => s.status === 'Done');
+    const unbilledList = completed.filter(s => s.fees_status !== 'Post Payment');
+    const overdueList  = services.filter(s => {
       if (s.status === 'Done') return false;
       const d = s.regulatory_due_date ? new Date(s.regulatory_due_date) : null;
       return d && !isNaN(d) && isBefore(d, now);
     });
     return {
-      totalClients: clients.length,
-      pendingCount: pending.length,
-      unbilledCount: unbilled.length,
-      overdueCount: overdue.length,
+      totalClients:  clients.length,
+      pendingCount:  pendingList.length,
+      unbilledCount: unbilledList.length,
+      overdueCount:  overdueList.length,
+      pendingList, unbilledList, overdueList,
     };
   }, [clients, services]);
 
@@ -226,28 +230,81 @@ export default function Dashboard() {
       {/* ── Stat Cards ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Clients', value: stats.totalClients,   icon: Users,         sub: 'organisations & individuals', deco: 'circles',  grad: STAT_GRADIENTS[0] },
-          { label: 'Pending Tasks', value: stats.pendingCount,   icon: Clock,         sub: 'services not yet completed',  deco: 'dots',     grad: STAT_GRADIENTS[1] },
-          { label: 'Unbilled Work', value: stats.unbilledCount,  icon: Banknote,      sub: 'completed, awaiting payment', deco: 'wave',     grad: STAT_GRADIENTS[2] },
-          { label: 'Overdue',       value: stats.overdueCount,   icon: AlertTriangle, sub: 'past regulatory deadline',    deco: 'hex',      grad: STAT_GRADIENTS[3] },
-        ].map(({ label, value, icon: Icon, sub, deco, grad }, i) => (
-          <div key={i} className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg"
-               style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}>
+          { label: 'Total Clients', value: stats.totalClients,   icon: Users,         sub: 'organisations & individuals', deco: 'circles', grad: STAT_GRADIENTS[0], action: () => navigate('/clients') },
+          { label: 'Pending Tasks', value: stats.pendingCount,   icon: Clock,         sub: 'services not yet completed',  deco: 'dots',    grad: STAT_GRADIENTS[1], action: () => setShowList('pending') },
+          { label: 'Unbilled Work', value: stats.unbilledCount,  icon: Banknote,      sub: 'completed, awaiting payment', deco: 'wave',    grad: STAT_GRADIENTS[2], action: () => setShowList('unbilled') },
+          { label: 'Overdue',       value: stats.overdueCount,   icon: AlertTriangle, sub: 'past regulatory deadline',    deco: 'hex',     grad: STAT_GRADIENTS[3], action: () => setShowList('overdue') },
+        ].map(({ label, value, icon: Icon, sub, deco, grad, action }, i) => (
+          <button key={i} onClick={action}
+                  className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg text-left w-full cursor-pointer group"
+                  style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}>
             <CardDeco type={deco} />
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
                   <Icon size={20} className="text-white" />
                 </div>
-                <ArrowUpRight size={16} className="text-white/50 mt-1" />
+                <ArrowUpRight size={16} className="text-white/60 mt-1 group-hover:text-white transition-colors" />
               </div>
               <p className="text-4xl font-extrabold tracking-tight mb-1">{value}</p>
               <p className="font-semibold text-sm text-white/90">{label}</p>
               <p className="text-xs text-white/60 mt-0.5 leading-snug">{sub}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* ── List Modal (Pending / Unbilled / Overdue) ────────────── */}
+      {showList && (() => {
+        const cfg = {
+          pending:  { title: 'Pending Tasks',  list: stats.pendingList,  color: '#F59E0B', badge: (s) => s.status || 'Pending' },
+          unbilled: { title: 'Unbilled Work',  list: stats.unbilledList, color: '#3B82F6', badge: (s) => s.fees_status || 'Unpaid' },
+          overdue:  { title: 'Overdue Items',  list: stats.overdueList,  color: '#EF4444', badge: (s) => s.regulatory_due_date ? new Date(s.regulatory_due_date).toLocaleDateString('en-GB') : '—' },
+        }[showList];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
+               style={{ background: 'rgba(0,0,0,0.45)' }}
+               onClick={() => setShowList(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-scale-in"
+                 onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{cfg.title}</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{cfg.list.length} item{cfg.list.length !== 1 ? 's' : ''}</p>
+                </div>
+                <button onClick={() => setShowList(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 p-3 space-y-2">
+                {cfg.list.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <CheckCircle2 size={36} className="text-green-400 mb-2" />
+                    <p className="font-medium text-green-600">Nothing here!</p>
+                  </div>
+                ) : cfg.list.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 text-sm truncate">{s.client_name || '—'}</p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{s.service_category || '—'}{s.assignee ? ` · ${s.assignee}` : ''}</p>
+                    </div>
+                    <span className="ml-3 text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
+                          style={{ background: cfg.color + '20', color: cfg.color }}>
+                      {cfg.badge(s)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 border-t border-gray-100">
+                <button onClick={() => { setShowList(null); navigate('/client-services'); }}
+                        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+                  View All Services
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Charts Row 1 ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -261,7 +318,7 @@ export default function Dashboard() {
               <Clock size={18} className="text-amber-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#4C1D95] text-base">Pending Tasks</h2>
+              <h2 className="font-bold text-gray-900 text-base">Pending Tasks</h2>
               <p className="text-xs text-gray-500">{stats.pendingCount} open service{stats.pendingCount !== 1 ? 's' : ''}</p>
             </div>
           </div>
@@ -306,7 +363,7 @@ export default function Dashboard() {
               <Banknote size={18} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#4C1D95] text-base">Billing Pipeline</h2>
+              <h2 className="font-bold text-gray-900 text-base">Billing Pipeline</h2>
               <p className="text-xs text-gray-500">Completed services by payment status</p>
             </div>
           </div>
@@ -347,7 +404,7 @@ export default function Dashboard() {
               <Calendar size={18} className="text-purple-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#4C1D95] text-base">Upcoming Deadlines</h2>
+              <h2 className="font-bold text-gray-900 text-base">Upcoming Deadlines</h2>
               <p className="text-xs text-gray-500">Internal & regulatory due dates — next 6 months</p>
             </div>
           </div>
@@ -383,7 +440,7 @@ export default function Dashboard() {
               <TrendingUp size={18} className="text-violet-600" />
             </div>
             <div>
-              <h2 className="font-bold text-[#4C1D95] text-base">All Services</h2>
+              <h2 className="font-bold text-gray-900 text-base">All Services</h2>
               <p className="text-xs text-gray-500">Full status breakdown</p>
             </div>
           </div>

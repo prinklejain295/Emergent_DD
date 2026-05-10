@@ -52,8 +52,8 @@ const daysSince = (v) => {
 };
 
 const EMPTY = {
-  name: '', business_name: '', platform: 'LinkedIn',
-  status: 'New Lead', last_followup_date: '', notes: '',
+  name: '', business_name: '', platform: '',
+  status: '', last_followup_date: '', notes: '',
 };
 
 const GRADIENTS = [
@@ -94,7 +94,7 @@ export default function LeadsPage() {
 
   const openAdd = () => {
     setEditingLead(null);
-    setFormData({ ...EMPTY, last_followup_date: new Date().toISOString().split('T')[0] });
+    setFormData(EMPTY);
     setShowModal(true);
   };
 

@@ -32,7 +32,18 @@ const GRADIENTS = [
 
 const initials = (name) => (name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-const EMPTY_FORM = { name: '', email: '', password: '', role: 'consultant' };
+const EMPTY_FORM = { name: '', email: '', password: '', role: '' };
+
+const emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+
+const pwdChecks = (p) => ({
+  len:     p.length >= 8,
+  upper:   /[A-Z]/.test(p),
+  number:  /[0-9]/.test(p),
+  special: /[^A-Za-z0-9]/.test(p),
+});
+const pwdStrength = (p) => Object.values(pwdChecks(p)).filter(Boolean).length;
+const PWD_LABELS = { len: 'At least 8 characters', upper: 'One uppercase letter', number: 'One number', special: 'One special character (!@#$…)' };
 
 /* ═══════════════════════════════════════════════════════════════════ */
 export default function SettingsPage() {
@@ -85,8 +96,14 @@ export default function SettingsPage() {
   /* ── Add member ─────────────────────────────────────────────────── */
   const handleAddMember = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      toast.error('Name, email and password are required'); return;
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim() || !form.role) {
+      toast.error('All fields including role are required'); return;
+    }
+    if (!emailRx.test(form.email.trim())) {
+      toast.error('Enter a valid email address'); return;
+    }
+    if (pwdStrength(form.password) < 3) {
+      toast.error('Password is too weak — use 8+ chars, uppercase, number, special character'); return;
     }
     setSaving(true);
     try {
@@ -114,7 +131,7 @@ export default function SettingsPage() {
 
   /* ── Reset password ─────────────────────────────────────────────── */
   const handleResetPassword = async () => {
-    if (!newPwd.trim() || newPwd.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (pwdStrength(newPwd) < 3) { toast.error('Password is too weak — use 8+ chars, uppercase, number, special character'); return; }
     try {
       await axios.put(`${API}/team/${resetTarget.Id}`, { password: newPwd }, getAuthHeaders());
       toast.success(`Password reset for ${resetTarget.name}`);
@@ -168,7 +185,7 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -183,14 +200,14 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#EDE9FE] rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-50 rounded-xl p-1 w-fit">
         {[
           { key: 'team',   label: 'Team Members', icon: Users  },
           { key: 'access', label: 'Access Control', icon: Shield },
         ].map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    tab === key ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#5B21B6] hover:bg-[#DDD6FE]'
+                    tab === key ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-800 hover:bg-gray-200'
                   }`}>
             <Icon size={15} /> {label}
           </button>
@@ -214,7 +231,7 @@ export default function SettingsPage() {
 
           {/* Team list header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#4C1D95]">
+            <h2 className="text-lg font-bold text-gray-900">
               Team Members <span className="text-sm font-normal text-gray-400 ml-1">({members.length})</span>
             </h2>
             {isAdmin && (
@@ -242,8 +259,8 @@ export default function SettingsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-[#4C1D95]">{m.name}</p>
-                      {isSelf && <span className="text-xs bg-[#EDE9FE] text-[#7C3AED] px-2 py-0.5 rounded-full font-semibold">You</span>}
+                      <p className="font-bold text-gray-900">{m.name}</p>
+                      {isSelf && <span className="text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded-full font-semibold">You</span>}
                     </div>
                     <p className="text-sm text-gray-500">{m.email}</p>
                   </div>
@@ -253,7 +270,7 @@ export default function SettingsPage() {
                     <div className="relative flex-shrink-0">
                       <select value={m.role || 'consultant'}
                               onChange={e => handleRoleChange(m, e.target.value)}
-                              className={`text-xs font-semibold pl-6 pr-7 py-1.5 rounded-full border cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7C3AED] appearance-none ${rc.color}`}>
+                              className={`text-xs font-semibold pl-6 pr-7 py-1.5 rounded-full border cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 appearance-none ${rc.color}`}>
                         {ROLES.filter(r => r.value !== 'admin').map(r => (
                           <option key={r.value} value={r.value}>{r.label}</option>
                         ))}
@@ -272,8 +289,8 @@ export default function SettingsPage() {
                     <div className="flex gap-1 flex-shrink-0">
                       <button onClick={() => { setResetTarget(m); setNewPwd(''); setShowNewPwd(false); }}
                               title="Reset password"
-                              className="p-2 hover:bg-[#EDE9FE] rounded-lg transition-colors">
-                        <Key size={15} className="text-[#7C3AED]" />
+                              className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                        <Key size={15} className="text-gray-700" />
                       </button>
                       <button onClick={() => handleRemove(m)} title="Remove member"
                               className="p-2 hover:bg-red-50 rounded-lg transition-colors">
@@ -296,11 +313,11 @@ export default function SettingsPage() {
       {tab === 'access' && (
         <div className="space-y-6">
           {/* Info */}
-          <div className="card p-5 flex gap-4 bg-[#EDE9FE] border-[#DDD6FE]">
-            <Shield size={20} className="text-[#7C3AED] flex-shrink-0 mt-0.5" />
+          <div className="card p-5 flex gap-4 bg-gray-50 border-gray-200">
+            <Shield size={20} className="text-gray-700 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-[#4C1D95] mb-1">How access control works</p>
-              <p className="text-sm text-[#5B21B6] leading-relaxed">
+              <p className="font-semibold text-gray-900 mb-1">How access control works</p>
+              <p className="text-sm text-gray-800 leading-relaxed">
                 Admins and Managers see all data. Consultants only see the clients assigned to them —
                 their services, calendar entries and leads are filtered automatically.
                 After changing access, the consultant must <strong>log out and log back in</strong> for changes to take effect.
@@ -334,7 +351,7 @@ export default function SettingsPage() {
                     {initials(m.name)}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-[#4C1D95]">{m.name}</p>
+                    <p className="font-bold text-gray-900">{m.name}</p>
                     <p className="text-xs text-gray-500">{m.email} · Consultant</p>
                   </div>
                   <span className="text-xs text-gray-400 mr-2">
@@ -357,15 +374,15 @@ export default function SettingsPage() {
                         <button key={c.Id} type="button"
                                 onClick={() => toggleClientAccess(m.Id, String(c.Id))}
                                 className={`flex items-center gap-2.5 p-2.5 rounded-xl border-2 text-left transition-all text-sm ${
-                                  isOn ? 'border-[#7C3AED] bg-[#EDE9FE]' : 'border-[#DDD6FE] hover:border-[#A855F7] bg-white'
+                                  isOn ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-500 bg-white'
                                 }`}>
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                            isOn ? 'bg-[#7C3AED] border-[#7C3AED]' : 'border-gray-300'
+                            isOn ? 'bg-gray-900 border-gray-900' : 'border-gray-300'
                           }`}>
                             {isOn && <span className="text-white text-xs leading-none">✓</span>}
                           </div>
                           <div className="min-w-0">
-                            <p className={`font-medium truncate ${isOn ? 'text-[#4C1D95]' : 'text-gray-700'}`}>{c.name}</p>
+                            <p className={`font-medium truncate ${isOn ? 'text-gray-900' : 'text-gray-700'}`}>{c.name}</p>
                             {c.company && <p className="text-xs text-gray-400 truncate">{c.company}</p>}
                           </div>
                         </button>
@@ -380,96 +397,154 @@ export default function SettingsPage() {
       )}
 
       {/* ── Add Member Modal ─────────────────────────────────────── */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4"
-                 style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED)' }}>
-              <h2 className="text-lg font-bold text-white">Add Team Member</h2>
-              <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
-            </div>
+      {showModal && (() => {
+        const strength = pwdStrength(form.password);
+        const checks   = pwdChecks(form.password);
+        const emailOk  = !form.email || emailRx.test(form.email.trim());
+        const strengthColor = ['#E5E7EB','#EF4444','#F59E0B','#3B82F6','#10B981'][strength];
+        const strengthLabel = ['','Weak','Fair','Good','Strong'][strength];
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-900">
+                <h2 className="text-lg font-bold text-white">Add Team Member</h2>
+                <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
+              </div>
 
-            <form onSubmit={handleAddMember} noValidate className="p-6 space-y-4">
-              <div>
-                <label className="label">Full Name *</label>
-                <input type="text" className="input-field" placeholder="e.g. Rahul Sharma" autoFocus
-                       value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label">Email Address *</label>
-                <input type="text" inputMode="email" className="input-field" placeholder="rahul@yourfirm.com"
-                       value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label">Initial Password *</label>
-                <div className="relative">
-                  <input type={showPwd ? 'text' : 'password'} className="input-field pr-10" placeholder="Min 6 characters"
-                         value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
-                  <button type="button" onClick={() => setShowPwd(v => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+              <form onSubmit={handleAddMember} noValidate className="p-6 space-y-4">
+                <div>
+                  <label className="label">Full Name *</label>
+                  <input type="text" className="input-field" placeholder="e.g. Rahul Sharma" autoFocus
+                         value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Share this with the team member. They can change it later.</p>
-              </div>
-              <div>
-                <label className="label">Role</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {ROLES.filter(r => r.value !== 'admin').map(({ value, label, icon: Icon, color, desc }) => (
-                    <button key={value} type="button" onClick={() => setForm(f => ({ ...f, role: value }))}
-                            className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left transition-all ${
-                              form.role === value ? 'border-[#7C3AED] bg-[#EDE9FE]' : 'border-[#DDD6FE] hover:border-[#A855F7]'
-                            }`}>
-                      <Icon size={16} className={form.role === value ? 'text-[#7C3AED] mt-0.5' : 'text-gray-400 mt-0.5'} />
-                      <div>
-                        <p className={`text-sm font-semibold ${form.role === value ? 'text-[#4C1D95]' : 'text-gray-700'}`}>{label}</p>
-                        <p className="text-xs text-gray-400 leading-tight">{desc}</p>
-                      </div>
+
+                <div>
+                  <label className="label">Email Address *</label>
+                  <input type="text" inputMode="email"
+                         className={`input-field ${form.email && !emailOk ? 'error' : ''}`}
+                         placeholder="rahul@yourfirm.com"
+                         value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  {form.email && !emailOk && <p className="error-msg">Enter a valid email (e.g. name@domain.com)</p>}
+                </div>
+
+                <div>
+                  <label className="label">Initial Password *</label>
+                  <div className="relative">
+                    <input type={showPwd ? 'text' : 'password'} className="input-field pr-10" placeholder="Min 8 characters"
+                           value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                    <button type="button" onClick={() => setShowPwd(v => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
-                  ))}
+                  </div>
+                  {form.password && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1 flex-1">
+                          {[1,2,3,4].map(n => (
+                            <div key={n} className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                                 style={{ background: n <= strength ? strengthColor : '#E5E7EB' }} />
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: strengthColor }}>{strengthLabel}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                        {Object.entries(PWD_LABELS).map(([key, label]) => (
+                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span>{checks[key] ? '✓' : '○'}</span> {label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">Share this with the team member. They can change it later.</p>
                 </div>
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button type="submit" disabled={saving} className="btn-primary flex-1">
-                  {saving ? 'Adding…' : 'Add Member'}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">Cancel</button>
-              </div>
-            </form>
+
+                <div>
+                  <label className="label">Role *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ROLES.filter(r => r.value !== 'admin').map(({ value, label, icon: Icon, desc }) => (
+                      <button key={value} type="button" onClick={() => setForm(f => ({ ...f, role: value }))}
+                              className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left transition-all ${
+                                form.role === value ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-400'
+                              }`}>
+                        <Icon size={16} className={form.role === value ? 'text-gray-900 mt-0.5' : 'text-gray-400 mt-0.5'} />
+                        <div>
+                          <p className={`text-sm font-semibold ${form.role === value ? 'text-gray-900' : 'text-gray-700'}`}>{label}</p>
+                          <p className="text-xs text-gray-400 leading-tight">{desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button type="submit" disabled={saving} className="btn-primary flex-1">
+                    {saving ? 'Adding…' : 'Add Member'}
+                  </button>
+                  <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">Cancel</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Reset Password Modal ─────────────────────────────────── */}
-      {resetTarget && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4"
-                 style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED)' }}>
-              <h2 className="text-lg font-bold text-white">Reset Password</h2>
-              <button onClick={() => setResetTarget(null)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600">Setting new password for <strong>{resetTarget.name}</strong></p>
-              <div>
-                <label className="label">New Password</label>
-                <div className="relative">
-                  <input type={showNewPwd ? 'text' : 'password'} className="input-field pr-10"
-                         placeholder="Min 6 characters" value={newPwd} onChange={e => setNewPwd(e.target.value)} autoFocus />
-                  <button type="button" onClick={() => setShowNewPwd(v => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+      {resetTarget && (() => {
+        const strength = pwdStrength(newPwd);
+        const checks   = pwdChecks(newPwd);
+        const strengthColor = ['#E5E7EB','#EF4444','#F59E0B','#3B82F6','#10B981'][strength];
+        const strengthLabel = ['','Weak','Fair','Good','Strong'][strength];
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-900">
+                <h2 className="text-lg font-bold text-white">Reset Password</h2>
+                <button onClick={() => setResetTarget(null)} className="text-white/70 hover:text-white hover:bg-white/15 p-1.5 rounded-lg"><X size={20} /></button>
               </div>
-              <div className="flex gap-3">
-                <button onClick={handleResetPassword} className="btn-primary flex-1">Reset Password</button>
-                <button onClick={() => setResetTarget(null)} className="btn-outline flex-1">Cancel</button>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-600">Setting new password for <strong>{resetTarget.name}</strong></p>
+                <div>
+                  <label className="label">New Password</label>
+                  <div className="relative">
+                    <input type={showNewPwd ? 'text' : 'password'} className="input-field pr-10"
+                           placeholder="Min 8 characters" value={newPwd} onChange={e => setNewPwd(e.target.value)} autoFocus />
+                    <button type="button" onClick={() => setShowNewPwd(v => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {newPwd && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1 flex-1">
+                          {[1,2,3,4].map(n => (
+                            <div key={n} className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                                 style={{ background: n <= strength ? strengthColor : '#E5E7EB' }} />
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: strengthColor }}>{strengthLabel}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                        {Object.entries(PWD_LABELS).map(([key, label]) => (
+                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span>{checks[key] ? '✓' : '○'}</span> {label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={handleResetPassword} className="btn-primary flex-1">Reset Password</button>
+                  <button onClick={() => setResetTarget(null)} className="btn-outline flex-1">Cancel</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

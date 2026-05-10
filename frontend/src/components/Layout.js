@@ -18,16 +18,16 @@ export default function Layout({ children, user, organization, onLogout }) {
   const SidebarContent = ({ onLinkClick }) => (
     <>
       {/* Logo */}
-      <div className="p-6 border-b border-purple-800/40">
+      <div className="p-6 border-b border-white/10">
         <div className="flex items-center space-x-3 mb-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
-               style={{ background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)' }}>
+               style={{ background: 'linear-gradient(135deg, #6366F1 0%, #EC4899 100%)' }}>
             D
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">DueDate</h1>
         </div>
-        <p className="text-purple-300 text-sm font-medium truncate">{organization?.name || '—'}</p>
-        <p className="text-purple-400 text-xs mt-0.5 truncate">{user?.name}</p>
+        <p className="text-slate-300 text-sm font-medium truncate">{organization?.name || '—'}</p>
+        <p className="text-slate-400 text-xs mt-0.5 truncate">{user?.name}</p>
       </div>
 
       {/* Nav */}
@@ -42,27 +42,27 @@ export default function Layout({ children, user, organization, onLogout }) {
               data-testid={`nav-${label.toLowerCase().replace(' ', '-')}`}
               className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${
                 active
-                  ? 'bg-white/15 text-white shadow-sm backdrop-blur-sm'
-                  : 'text-purple-300 hover:text-white hover:bg-white/10'
+                  ? 'bg-white/12 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-white/8'
               }`}
             >
-              <Icon size={19} className={active ? 'text-purple-200' : ''} />
+              <Icon size={19} className={active ? 'text-slate-200' : ''} />
               <span>{label}</span>
-              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-300" />}
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-300" />}
             </Link>
           );
         })}
       </nav>
 
       {/* Settings + Logout */}
-      <div className="p-4 border-t border-purple-800/40 space-y-1">
+      <div className="p-4 border-t border-white/10 space-y-1">
         <Link
           to="/settings"
           onClick={onLinkClick}
           className={`flex items-center space-x-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm ${
             location.pathname === '/settings'
-              ? 'bg-white/15 text-white'
-              : 'text-purple-300 hover:text-white hover:bg-white/10'
+              ? 'bg-white/12 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-white/8'
           }`}
         >
           <Settings size={19} />
@@ -71,7 +71,7 @@ export default function Layout({ children, user, organization, onLogout }) {
         <button
           onClick={onLogout}
           data-testid="logout-button"
-          className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-purple-300 hover:text-white hover:bg-red-500/20 transition-all font-medium text-sm"
+          className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:text-white hover:bg-red-500/20 transition-all font-medium text-sm"
         >
           <LogOut size={19} />
           <span>Logout</span>
@@ -81,42 +81,17 @@ export default function Layout({ children, user, organization, onLogout }) {
   );
 
   return (
-    <div className="min-h-screen flex bg-[#F5F3FF]">
-
-      {/* ── Global decorative watermarks ─────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Large gradient blob — top right */}
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full opacity-[0.06]"
-             style={{ background: 'radial-gradient(circle, #7C3AED 0%, transparent 70%)' }} />
-        {/* Medium blob — bottom left */}
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-[0.05]"
-             style={{ background: 'radial-gradient(circle, #A855F7 0%, transparent 70%)' }} />
-        {/* Small accent — center right */}
-        <div className="absolute top-1/2 -right-16 w-48 h-48 rounded-full opacity-[0.04]"
-             style={{ background: 'radial-gradient(circle, #EC4899 0%, transparent 70%)' }} />
-        {/* Dot grid */}
-        <svg className="absolute inset-0 w-full h-full opacity-[0.025]" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.5" fill="#7C3AED" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#dotgrid)" />
-        </svg>
-        {/* Decorative ring — mid left */}
-        <div className="absolute top-1/3 -left-20 w-64 h-64 rounded-full border-2 border-purple-400/10" />
-        <div className="absolute top-1/3 -left-12 w-48 h-48 rounded-full border border-purple-400/10" />
-      </div>
+    <div className="min-h-screen flex bg-[#F9FAFB]">
 
       {/* ── Desktop Sidebar ──────────────────────────────────────── */}
       <aside className="hidden md:flex w-64 fixed left-0 top-0 h-screen flex-col z-40 animate-slide-in"
-             style={{ background: 'linear-gradient(180deg, #4C1D95 0%, #5B21B6 50%, #4C1D95 100%)' }}>
+             style={{ background: 'linear-gradient(180deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)' }}>
         <SidebarContent onLinkClick={undefined} />
       </aside>
 
       {/* ── Mobile Header ────────────────────────────────────────── */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 z-50"
-           style={{ background: 'linear-gradient(90deg, #4C1D95 0%, #6D28D9 100%)' }}>
+           style={{ background: 'linear-gradient(90deg, #0F172A 0%, #1E293B 100%)' }}>
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg font-bold"
                style={{ background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)' }}>
@@ -133,7 +108,7 @@ export default function Layout({ children, user, organization, onLogout }) {
       {/* ── Mobile Menu ──────────────────────────────────────────── */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-16 z-40 overflow-y-auto animate-fade-in flex flex-col"
-             style={{ background: 'linear-gradient(180deg, #4C1D95 0%, #5B21B6 100%)' }}>
+             style={{ background: 'linear-gradient(180deg, #0F172A 0%, #1E293B 100%)' }}>
           <SidebarContent onLinkClick={() => setMobileMenuOpen(false)} />
         </div>
       )}
