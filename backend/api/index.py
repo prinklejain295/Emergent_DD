@@ -488,23 +488,24 @@ def add_team_member():
             return jsonify({"error": "A user with this email already exists"}), 409
 
         member_id = str(uuid.uuid4())
-        result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", {
-            "id":               member_id,
-            "organization_id":  user.get('organization_id', ''),
-            "name":             data.get('name'),
-            "email":            data.get('email'),
-            "password":         hash_password(data.get('password')),
-            "role":             data.get('role', 'consultant'),
-            "assigned_clients": "",
-            "created_at":       datetime.now(timezone.utc).isoformat()
-        })
+        payload = {
+            "id":              member_id,
+            "organization_id": user.get('organization_id', ''),
+            "name":            data.get('name'),
+            "email":           data.get('email'),
+            "password":        hash_password(data.get('password')),
+            "role":            data.get('role', 'consultant'),
+            "created_at":      datetime.now(timezone.utc).isoformat()
+        }
+        result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", payload)
         if result is None:
-            return jsonify({"error": "Failed to add team member"}), 500
+            return jsonify({"error": "Failed to add team member — check Vercel logs for NocoDB error"}), 500
         return jsonify({
             "Id": result.get('Id'), "id": member_id,
             "name": data['name'], "email": data['email'],
             "role": data.get('role', 'consultant'), "assigned_clients": ""
         }), 201
+
     except Exception as e:
         print(f"add_team_member error: {e}")
         return jsonify({"error": str(e)}), 500
