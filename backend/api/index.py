@@ -497,9 +497,13 @@ def add_team_member():
             "role":            data.get('role', 'consultant'),
             "created_at":      datetime.now(timezone.utc).isoformat()
         }
-        result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_USERS}/records", payload)
-        if result is None:
-            return jsonify({"error": "Failed to add team member — check Vercel logs for NocoDB error"}), 500
+        r = requests.post(
+            f"{NOCODB_URL}/api/v2/tables/{NOCODB_TABLE_USERS}/records",
+            headers=get_headers(), json=payload, timeout=30
+        )
+        if r.status_code >= 400:
+            return jsonify({"error": f"NocoDB rejected: {r.status_code} — {r.text}"}), 500
+        result = r.json()
         return jsonify({
             "Id": result.get('Id'), "id": member_id,
             "name": data['name'], "email": data['email'],
