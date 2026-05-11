@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { Plus, Edit2, Trash2, Search, X, Upload, Download, Filter, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Upload, Download, Filter, ChevronDown, ChevronUp, RefreshCw, Clock, Timer } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://emergent-dd-2b7s.vercel.app';
@@ -75,7 +75,12 @@ const colMap = {
 const matchCol = (header, field) =>
   colMap[field].includes(String(header).toLowerCase().trim());
 
+const fmtMins = (m) => { const n = parseInt(m)||0; return n<60?`${n}m`:`${Math.floor(n/60)}h ${n%60}m`; };
+const todayStr = () => new Date().toISOString().split('T')[0];
+
 export default function ClientServicesPage() {
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
   const [records, setRecords]             = useState([]);
   const [loading, setLoading]             = useState(true);
   const [uploading, setUploading]         = useState(false);
@@ -85,6 +90,13 @@ export default function ClientServicesPage() {
   const [formData, setFormData]           = useState(EMPTY);
   const [filters, setFilters]             = useState(EMPTY_FILTERS);
   const fileInputRef                      = useRef(null);
+
+  /* Log-time popup (shown when a service is saved as Done) */
+  const [logTimeData, setLogTimeData]     = useState(null); // { client_name, service_category }
+  const [logMins, setLogMins]             = useState('');
+  const [logNotes, setLogNotes]           = useState('');
+  const [logDate, setLogDate]             = useState(todayStr());
+  const [logSaving, setLogSaving]         = useState(false);
 
   useEffect(() => { fetchRecords(); }, []);
 
@@ -161,6 +173,11 @@ export default function ClientServicesPage() {
       }
       setShowModal(false);
       fetchRecords();
+      /* Trigger log-time popup when service is newly marked Done */
+      if (payload.status === 'Done' && editingRecord?.status !== 'Done') {
+        setLogTimeData({ client_name: payload.client_name, service_category: payload.service_category });
+        setLogMins(''); setLogNotes(''); setLogDate(todayStr());
+      }
     } catch (err) {
       toast.error(await toastMsg('ClientServicesPage.save', err, 'Failed to save service'));
     }
@@ -659,6 +676,84 @@ export default function ClientServicesPage() {
                 <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Log Time Popup ──────────────────────────────────────── */}
+      {logTimeData && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 modal-overlay">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in">
+            <div className="bg-gray-900 px-6 py-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Timer size={18} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Log Time</h2>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">
+                  {logTimeData.client_name} · {logTimeData.service_category}
+                </p>
+              </div>
+              <button onClick={() => setLogTimeData(null)} className="ml-auto text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600">
+                Great — <strong>{logTimeData.service_category || 'this service'}</strong> is marked Done!
+                How long did it take?
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Minutes taken *</label>
+                  <div className="relative">
+                    <input type="number" min="1" className="input-field pr-14" placeholder="e.g. 90"
+                           value={logMins} onChange={e => setLogMins(e.target.value)} autoFocus />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">
+                      {logMins ? fmtMins(logMins) : 'min'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Date</label>
+                  <input type="date" className="input-field" value={logDate}
+                         onChange={e => setLogDate(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Notes (optional)</label>
+                <textarea className="textarea-field text-sm" rows={2}
+                          placeholder="What was done? Any observations?"
+                          value={logNotes} onChange={e => setLogNotes(e.target.value)} />
+              </div>
+
+              <div className="flex gap-3">
+                <button disabled={logSaving} onClick={async () => {
+                  if (!logMins || parseInt(logMins) <= 0) { toast.error('Enter valid minutes'); return; }
+                  setLogSaving(true);
+                  try {
+                    await axios.post(`${API}/timesheets`, {
+                      client_name:      logTimeData.client_name,
+                      service_category: logTimeData.service_category,
+                      minutes:          parseInt(logMins),
+                      date:             logDate,
+                      notes:            logNotes,
+                      user_name:        currentUser.name || '',
+                    }, getAuthHeaders());
+                    toast.success('Time logged to timesheet');
+                    setLogTimeData(null);
+                  } catch (err) {
+                    toast.error(await toastMsg('Services.logTime', err, 'Failed to log time'));
+                  } finally { setLogSaving(false); }
+                }} className="btn-primary flex-1">
+                  {logSaving ? 'Saving…' : 'Log Time'}
+                </button>
+                <button onClick={() => setLogTimeData(null)} className="btn-outline flex-1">Skip</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

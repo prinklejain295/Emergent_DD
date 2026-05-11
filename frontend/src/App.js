@@ -9,6 +9,7 @@ import LeadsPage from './pages/LeadsPage';
 import SettingsPage from './pages/SettingsPage';
 import RemindersPage from './pages/RemindersPage';
 import CalendarPage from './pages/CalendarPage';
+import TimesheetPage from './pages/TimesheetPage';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -152,6 +153,18 @@ function App() {
               isAuthenticated ? (
                 <Layout user={user} organization={organization} onLogout={handleLogout}>
                   <CalendarPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/timesheet"
+            element={
+              isAuthenticated ? (
+                <Layout user={user} organization={organization} onLogout={handleLogout}>
+                  <TimesheetPage />
                 </Layout>
               ) : (
                 <Navigate to="/login" replace />

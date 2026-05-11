@@ -29,8 +29,9 @@ NOCODB_TABLE_DUEDATES = os.environ.get('NOCODB_TABLE_DUEDATES', '')
 NOCODB_TABLE_SERVICETYPES = os.environ.get('NOCODB_TABLE_SERVICETYPES', '')
 NOCODB_TABLE_ERRORS = os.environ.get('NOCODB_TABLE_ERRORS', '')
 NOCODB_TABLE_CLIENT_SERVICES = os.environ.get('NOCODB_TABLE_CLIENT_SERVICES', '')
-NOCODB_TABLE_LEADS      = os.environ.get('NOCODB_TABLE_LEADS', '').strip()
-NOCODB_TABLE_REMINDERS  = os.environ.get('NOCODB_TABLE_REMINDERS', '').strip()
+NOCODB_TABLE_LEADS       = os.environ.get('NOCODB_TABLE_LEADS', '').strip()
+NOCODB_TABLE_REMINDERS   = os.environ.get('NOCODB_TABLE_REMINDERS', '').strip()
+NOCODB_TABLE_TIMESHEETS  = os.environ.get('NOCODB_TABLE_TIMESHEETS', '').strip()
 
 DEFAULT_SERVICE_TYPES = {
     'federal': ['Form 941', 'Form 940', 'Form 1120', 'Form 1065', 'Form W-2', 'Form 1099-NEC'],
@@ -695,6 +696,73 @@ def delete_lead(lead_id):
 
     nc_delete(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {"Id": lead_id})
     return jsonify({"message": "Lead deleted"})
+
+# ── Timesheets ────────────────────────────────────────────────────────────────
+
+@app.route('/api/timesheets', methods=['GET'])
+def get_timesheets():
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        if not NOCODB_TABLE_TIMESHEETS:
+            return jsonify([])
+        org_id = user.get('organization_id', '')
+        role   = user.get('role', 'admin')
+        if role == 'consultant':
+            where = f"(organization_id,eq,{org_id})~and(user_id,eq,{user.get('user_id','')})"
+        else:
+            where = f"(organization_id,eq,{org_id})"
+        result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_TIMESHEETS}/records",
+                        params={"where": where, "limit": 2000, "sort": "-Id"})
+        return jsonify((result.get('list') or []) if result else [])
+    except Exception as e:
+        print(f"get_timesheets error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/timesheets', methods=['POST'])
+def create_timesheet():
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        if not NOCODB_TABLE_TIMESHEETS:
+            return jsonify({"error": "Timesheets table not configured"}), 503
+        data = request.get_json(force=True) or {}
+        if not data.get('client_name') or not data.get('minutes'):
+            return jsonify({"error": "client_name and minutes are required"}), 400
+        entry_id = str(uuid.uuid4())
+        result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_TIMESHEETS}/records", {
+            "id":               entry_id,
+            "organization_id":  user.get('organization_id', ''),
+            "user_id":          user.get('user_id', ''),
+            "user_name":        data.get('user_name', ''),
+            "client_name":      data.get('client_name', ''),
+            "service_category": data.get('service_category', ''),
+            "minutes":          str(data.get('minutes', 0)),
+            "date":             data.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d')),
+            "notes":            data.get('notes', ''),
+        })
+        if result is None:
+            return jsonify({"error": "Failed to save timesheet entry"}), 500
+        return jsonify({"Id": result.get('Id'), "id": entry_id, **data}), 201
+    except Exception as e:
+        print(f"create_timesheet error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/timesheets/<int:entry_id>', methods=['DELETE'])
+def delete_timesheet(entry_id):
+    try:
+        user, error, code = get_token()
+        if error:
+            return error, code
+        if not NOCODB_TABLE_TIMESHEETS:
+            return jsonify({"error": "Timesheets table not configured"}), 503
+        nc_delete(f"/api/v2/tables/{NOCODB_TABLE_TIMESHEETS}/records", {"Id": entry_id})
+        return jsonify({"message": "Deleted"})
+    except Exception as e:
+        print(f"delete_timesheet error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # ── Error Logger ──────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList, Target, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Bell, LogOut, Menu, X, ClipboardList, Target, Settings, Clock } from 'lucide-react';
 
 export default function Layout({ children, user, organization, onLogout }) {
   const location = useLocation();
@@ -13,6 +13,7 @@ export default function Layout({ children, user, organization, onLogout }) {
     { path: '/leads',           icon: Target,          label: 'Leads'     },
     { path: '/reminders',       icon: Bell,            label: 'Reminders' },
     { path: '/calendar',        icon: Calendar,        label: 'Calendar'  },
+    { path: '/timesheet',       icon: Clock,           label: 'Timesheet' },
   ];
 
   const SidebarContent = ({ onLinkClick }) => (
