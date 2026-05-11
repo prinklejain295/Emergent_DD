@@ -644,15 +644,17 @@ def create_lead():
 
     lead_id = str(uuid.uuid4())
     result = nc_post(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {
-        "id":                 lead_id,
-        "organization_id":    user['organization_id'],
-        "name":               data.get('name', ''),
-        "business_name":      data.get('business_name', ''),
-        "platform":           data.get('platform', ''),
-        "status":             data.get('status', 'New Lead'),
-        "last_followup_date": data.get('last_followup_date'),
-        "notes":              data.get('notes', ''),
-        "created_at":         datetime.now(timezone.utc).isoformat()
+        "id":                   lead_id,
+        "organization_id":      user['organization_id'],
+        "name":                 data.get('name', ''),
+        "business_name":        data.get('business_name', ''),
+        "platform":             data.get('platform', ''),
+        "status":               data.get('status', 'New Lead'),
+        "last_followup_date":   data.get('last_followup_date'),
+        "lead_generated_date":  data.get('lead_generated_date'),
+        "lead_manager":         data.get('lead_manager', ''),
+        "notes":                data.get('notes', ''),
+        "created_at":           datetime.now(timezone.utc).isoformat()
     })
     if result is None:
         return jsonify({"error": "Failed to create lead"}), 500
@@ -671,13 +673,15 @@ def update_lead(lead_id):
         return jsonify({"error": "Invalid request body"}), 400
 
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records", {
-        "Id":                 lead_id,
-        "name":               data.get('name'),
-        "business_name":      data.get('business_name'),
-        "platform":           data.get('platform'),
-        "status":             data.get('status'),
-        "last_followup_date": data.get('last_followup_date'),
-        "notes":              data.get('notes'),
+        "Id":                  lead_id,
+        "name":                data.get('name'),
+        "business_name":       data.get('business_name'),
+        "platform":            data.get('platform'),
+        "status":              data.get('status'),
+        "last_followup_date":  data.get('last_followup_date'),
+        "lead_generated_date": data.get('lead_generated_date'),
+        "lead_manager":        data.get('lead_manager'),
+        "notes":               data.get('notes'),
     })
     return jsonify({"Id": lead_id, **data})
 

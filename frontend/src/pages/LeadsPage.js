@@ -54,7 +54,8 @@ const daysSince = (v) => {
 
 const EMPTY = {
   name: '', business_name: '', platform: '',
-  status: '', last_followup_date: '', notes: '',
+  status: '', last_followup_date: '', lead_generated_date: '',
+  lead_manager: '', notes: '',
 };
 
 const GRADIENTS = [
@@ -104,12 +105,14 @@ export default function LeadsPage() {
   const openEdit = (lead) => {
     setEditingLead(lead);
     setFormData({
-      name:               lead.name || '',
-      business_name:      lead.business_name || '',
-      platform:           lead.platform || 'LinkedIn',
-      status:             lead.status || 'New Lead',
-      last_followup_date: lead.last_followup_date ? lead.last_followup_date.split('T')[0] : '',
-      notes:              lead.notes || '',
+      name:                lead.name || '',
+      business_name:       lead.business_name || '',
+      platform:            lead.platform || '',
+      status:              lead.status || '',
+      last_followup_date:  lead.last_followup_date ? lead.last_followup_date.split('T')[0] : '',
+      lead_generated_date: lead.lead_generated_date ? lead.lead_generated_date.split('T')[0] : '',
+      lead_manager:        lead.lead_manager || '',
+      notes:               lead.notes || '',
     });
     setShowModal(true);
   };
@@ -315,7 +318,12 @@ export default function LeadsPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr style={{ background: '#111827' }}>
-                  {[['name','Name'],['business_name','Business'],['platform','Platform'],['status','Status'],['last_followup_date','Last Follow-up'],['','Notes'],['','']].map(([key, label]) => (
+                  {[
+                    ['name','Name'],['business_name','Business'],['platform','Platform'],
+                    ['status','Status'],['lead_generated_date','Generated'],
+                    ['last_followup_date','Last Follow-up'],['lead_manager','Manager'],
+                    ['','Notes'],['',''],
+                  ].map(([key, label]) => (
                     <th key={key + label} onClick={() => key && toggleSort(key)}
                         className={`px-4 py-3.5 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}>
                       {label}{key && <SortIcon col={key} />}
@@ -368,6 +376,11 @@ export default function LeadsPage() {
                         </select>
                       </td>
 
+                      {/* Lead generated date */}
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                        {fmtDate(lead.lead_generated_date) || <span className="text-gray-300">—</span>}
+                      </td>
+
                       {/* Last follow-up */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div>
@@ -380,6 +393,11 @@ export default function LeadsPage() {
                             </p>
                           )}
                         </div>
+                      </td>
+
+                      {/* Lead manager */}
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                        {lead.lead_manager || <span className="text-gray-300">—</span>}
                       </td>
 
                       {/* Notes */}
@@ -550,10 +568,23 @@ export default function LeadsPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Lead Generated Date</label>
+                  <input type="date" className="input-field" value={formData.lead_generated_date}
+                         onChange={e => set('lead_generated_date', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Date of Last Follow-up</label>
+                  <input type="date" className="input-field" value={formData.last_followup_date}
+                         onChange={e => set('last_followup_date', e.target.value)} />
+                </div>
+              </div>
+
               <div>
-                <label className="label">Date of Last Follow-up</label>
-                <input type="date" className="input-field" value={formData.last_followup_date}
-                       onChange={e => set('last_followup_date', e.target.value)} />
+                <label className="label">Lead Manager</label>
+                <input type="text" className="input-field" placeholder="Name of person managing this lead"
+                       value={formData.lead_manager} onChange={e => set('lead_manager', e.target.value)} />
               </div>
 
               <div>
