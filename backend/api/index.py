@@ -626,9 +626,9 @@ def get_leads():
         return jsonify([])   # graceful empty until table is configured
 
     result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records",
-                    params={"where": f"(organization_id,eq,{user['organization_id']})",
-                            "limit": 1000, "sort": "-created_at"})
-    return jsonify(result.get('list', []) if result else [])
+                    params={"where": f"(organization_id,eq,{user.get('organization_id','')})",
+                            "limit": 1000, "sort": "-Id"})
+    return jsonify((result.get('list') or []) if result else [])
 
 @app.route('/api/leads', methods=['POST'])
 def create_lead():
