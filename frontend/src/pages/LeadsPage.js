@@ -6,6 +6,7 @@ import {
   Plus, Edit2, Trash2, Search, X, LayoutGrid, List,
   Linkedin, Mail, Globe, Phone, Star, ChevronDown,
   Calendar, Building2, User, ArrowUpDown, ChevronUp, Upload,
+  CheckSquare, Square, RefreshCw,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -75,7 +76,10 @@ export default function LeadsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData]   = useState(EMPTY);
-  const [importing, setImporting] = useState(false);
+  const [importing, setImporting]   = useState(false);
+  const [selected, setSelected]     = useState(new Set()); // Set of lead Id values
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkActing, setBulkActing] = useState(false);
 
   /* Filters */
   const [search, setSearch]           = useState('');
@@ -85,6 +89,7 @@ export default function LeadsPage() {
   const [sortDir, setSortDir]         = useState('desc');
 
   useEffect(() => { fetchLeads(); }, []);
+  useEffect(() => { setSelected(new Set()); }, [search, filterStatus, filterPlatform, sortKey, sortDir]);
 
   const fetchLeads = async () => {
     try {
@@ -256,6 +261,52 @@ export default function LeadsPage() {
     }
   };
 
+  /* ── Selection helpers ────────────────────────────────────────── */
+  const toggleSelect = (id) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const toggleSelectAll = (ids) => {
+    setSelected(prev => ids.every(id => prev.has(id)) ? new Set() : new Set(ids));
+  };
+
+  /* ── Bulk delete ──────────────────────────────────────────────── */
+  const handleBulkDelete = async () => {
+    if (!selected.size) return;
+    if (!window.confirm(`Delete ${selected.size} lead${selected.size !== 1 ? 's' : ''}?`)) return;
+    setBulkActing(true);
+    let done = 0;
+    for (const id of selected) {
+      try { await axios.delete(`${API}/leads/${id}`, getAuthHeaders()); done++; } catch (_e) {}
+    }
+    toast.success(`Deleted ${done} lead${done !== 1 ? 's' : ''}`);
+    setSelected(new Set());
+    fetchLeads();
+    setBulkActing(false);
+  };
+
+  /* ── Bulk status change ───────────────────────────────────────── */
+  const handleBulkStatus = async (newStatus) => {
+    if (!selected.size || !newStatus) return;
+    setBulkActing(true);
+    let done = 0;
+    for (const id of selected) {
+      const lead = leads.find(l => l.Id === id);
+      if (!lead) continue;
+      try {
+        await axios.put(`${API}/leads/${id}`, { ...lead, status: newStatus }, getAuthHeaders());
+        done++;
+      } catch (_e) {}
+    }
+    toast.success(`Updated ${done} lead${done !== 1 ? 's' : ''} to "${newStatus}"`);
+    setSelected(new Set());
+    setBulkStatus('');
+    fetchLeads();
+    setBulkActing(false);
+  };
+
   /* Sort */
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -343,6 +394,37 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* ── Bulk action bar ─────────────────────────────────────────── */}
+      {selected.size > 0 && (
+        <div className="sticky top-4 z-30 mb-4 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-xl animate-scale-in">
+          <span className="font-semibold text-sm">
+            {selected.size} lead{selected.size !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex-1" />
+
+          {/* Bulk status change */}
+          <select value={bulkStatus}
+                  onChange={e => { setBulkStatus(e.target.value); if (e.target.value) handleBulkStatus(e.target.value); }}
+                  disabled={bulkActing}
+                  className="text-xs font-semibold bg-white/10 border border-white/20 text-white rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none hover:bg-white/20 transition-colors">
+            <option value="">Change status…</option>
+            {STATUSES.map(s => <option key={s.label} value={s.label} className="text-gray-900">{s.label}</option>)}
+          </select>
+
+          {/* Bulk delete */}
+          <button onClick={handleBulkDelete} disabled={bulkActing}
+                  className="flex items-center gap-1.5 text-xs font-semibold bg-red-500/80 hover:bg-red-500 px-3 py-1.5 rounded-lg transition-colors">
+            <Trash2 size={13} /> {bulkActing ? 'Working…' : 'Delete'}
+          </button>
+
+          {/* Clear selection */}
+          <button onClick={() => setSelected(new Set())}
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* ── Status summary chips ────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2 mb-6">
         {STATUSES.map(s => {
@@ -378,6 +460,15 @@ export default function LeadsPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr style={{ background: '#111827' }}>
+                  {/* Select-all checkbox */}
+                  <th className="px-3 py-3.5 w-10">
+                    <button onClick={() => toggleSelectAll(displayed.map(l => l.Id))}
+                            className="text-white/70 hover:text-white transition-colors">
+                      {displayed.length > 0 && displayed.every(l => selected.has(l.Id))
+                        ? <CheckSquare size={16} />
+                        : <Square size={16} />}
+                    </button>
+                  </th>
                   {[
                     ['name','Name'],['business_name','Business'],['platform','Platform'],
                     ['status','Status'],['lead_generated_date','Generated'],
@@ -400,7 +491,15 @@ export default function LeadsPage() {
                   const isStale = days !== null && days > 7 && lead.status !== 'Converted' && lead.status !== 'Lost';
 
                   return (
-                    <tr key={lead.Id || i} className="group border-b border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
+                    <tr key={lead.Id || i}
+                        className={`group border-b border-gray-100 transition-colors ${selected.has(lead.Id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                      {/* Checkbox */}
+                      <td className="px-3 py-3 w-10">
+                        <button onClick={() => toggleSelect(lead.Id)}
+                                className="text-gray-400 hover:text-gray-700 transition-colors">
+                          {selected.has(lead.Id) ? <CheckSquare size={16} className="text-blue-600" /> : <Square size={16} />}
+                        </button>
+                      </td>
                       {/* Name */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
