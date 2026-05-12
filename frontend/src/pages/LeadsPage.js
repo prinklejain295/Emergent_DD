@@ -169,19 +169,36 @@ export default function LeadsPage() {
           return;
         }
 
+        /* Normalize all keys to lowercase-trimmed for flexible matching */
+        const normalize = (row) => {
+          const out = {};
+          Object.keys(row).forEach(k => { out[k.toLowerCase().trim()] = String(row[k] ?? '').trim(); });
+          return out;
+        };
+
+        /* Pick a value by trying multiple possible column names */
+        const pick = (row, ...keys) => {
+          for (const k of keys) {
+            const v = row[k.toLowerCase().trim()];
+            if (v && v !== '') return v;
+          }
+          return '';
+        };
+
         let created = 0, skipped = 0;
-        for (const row of rows) {
-          const name = String(row['name'] || row['Name'] || row['Contact Name'] || '').trim();
+        for (const rawRow of rows) {
+          const row  = normalize(rawRow);
+          const name = pick(row, 'name', 'contact name', 'contact', 'full name', 'lead name', 'client name');
           if (!name) { skipped++; continue; }
           const payload = {
             name,
-            business_name:       String(row['business_name']       || row['Business Name']       || '').trim(),
-            platform:            String(row['platform']            || row['Platform']            || '').trim(),
-            status:              String(row['status']              || row['Status']              || 'New Lead').trim(),
-            lead_manager:        String(row['lead_manager']        || row['Lead Manager']        || '').trim(),
-            lead_generated_date: String(row['lead_generated_date'] || row['Lead Generated Date'] || '').trim() || null,
-            last_followup_date:  String(row['last_followup_date']  || row['Last Follow-up']      || '').trim() || null,
-            notes:               String(row['notes']               || row['Notes']               || '').trim(),
+            business_name:       pick(row, 'business name', 'business_name', 'company', 'firm', 'organisation', 'organization'),
+            platform:            pick(row, 'platform', 'source', 'channel', 'lead source'),
+            status:              pick(row, 'status', 'lead status') || 'New Lead',
+            lead_manager:        pick(row, 'lead manager', 'lead_manager', 'manager', 'assigned to', 'assignee'),
+            lead_generated_date: pick(row, 'lead generated date', 'lead_generated_date', 'generated date', 'generated on', 'date') || null,
+            last_followup_date:  pick(row, 'last follow-up', 'last_followup_date', 'follow up date', 'last contact', 'followup date') || null,
+            notes:               pick(row, 'notes', 'remarks', 'comments', 'description'),
           };
           try {
             await axios.post(`${API}/leads`, payload, getAuthHeaders());
