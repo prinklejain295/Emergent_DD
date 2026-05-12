@@ -69,6 +69,23 @@ def nc_get(endpoint: str, params: dict = None):
     except:
         return None
 
+def nc_get_all(endpoint: str, base_params: dict = None):
+    """Paginate through all NocoDB records (NocoDB caps single responses at 100)."""
+    PAGE = 500
+    all_records = []
+    offset = 0
+    params = dict(base_params or {})
+    params['limit'] = PAGE
+    while True:
+        params['offset'] = offset
+        result = nc_get(endpoint, params)
+        page = (result.get('list') or []) if result else []
+        all_records.extend(page)
+        if len(page) < PAGE:
+            break
+        offset += PAGE
+    return all_records
+
 def nc_post(endpoint: str, data: dict):
     try:
         r = requests.post(f"{NOCODB_URL}{endpoint}", headers=get_headers(), json=data, timeout=30)
@@ -206,9 +223,8 @@ def get_clients():
     if error:
         return error, code
 
-    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
-                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 1000})
-    clients = result.get('list', []) if result else []
+    clients = nc_get_all(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                         {"where": f"(organization_id,eq,{user['organization_id']})", "sort": "name"})
 
     assigned = _assigned_ids(user)
     if assigned is not None:
@@ -356,17 +372,13 @@ def get_client_services():
     if not NOCODB_TABLE_CLIENT_SERVICES:
         return jsonify({"error": "Client services table not configured"}), 503
 
-    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records",
-                    params={"where": f"(organization_id,eq,{user['organization_id']})",
-                            "limit": 1000, "sort": "-created_at"})
-    services = result.get('list', []) if result else []
+    services = nc_get_all(f"/api/v2/tables/{NOCODB_TABLE_CLIENT_SERVICES}/records",
+                          {"where": f"(organization_id,eq,{user['organization_id']})"})
 
     assigned = _assigned_ids(user)
     if assigned is not None:
-        # Resolve assigned client names from NocoDB Ids
-        cr = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
-                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 1000})
-        all_clients = cr.get('list', []) if cr else []
+        all_clients = nc_get_all(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                                 {"where": f"(organization_id,eq,{user['organization_id']})"})
         allowed_names = {c['name'] for c in all_clients if str(c.get('Id', '')) in assigned}
         services = [s for s in services if s.get('client_name') in allowed_names]
 
@@ -626,10 +638,9 @@ def get_leads():
     if not NOCODB_TABLE_LEADS:
         return jsonify([])   # graceful empty until table is configured
 
-    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records",
-                    params={"where": f"(organization_id,eq,{user.get('organization_id','')})",
-                            "limit": 1000, "sort": "-Id"})
-    return jsonify((result.get('list') or []) if result else [])
+    records = nc_get_all(f"/api/v2/tables/{NOCODB_TABLE_LEADS}/records",
+                         {"where": f"(organization_id,eq,{user.get('organization_id','')})", "sort": "-Id"})
+    return jsonify(records)
 
 @app.route('/api/leads', methods=['POST'])
 def create_lead():
@@ -713,9 +724,9 @@ def get_timesheets():
             where = f"(organization_id,eq,{org_id})~and(user_id,eq,{user.get('user_id','')})"
         else:
             where = f"(organization_id,eq,{org_id})"
-        result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_TIMESHEETS}/records",
-                        params={"where": where, "limit": 2000, "sort": "-Id"})
-        return jsonify((result.get('list') or []) if result else [])
+        records = nc_get_all(f"/api/v2/tables/{NOCODB_TABLE_TIMESHEETS}/records",
+                             {"where": where, "sort": "-Id"})
+        return jsonify(records)
     except Exception as e:
         print(f"get_timesheets error: {e}")
         return jsonify({"error": str(e)}), 500
