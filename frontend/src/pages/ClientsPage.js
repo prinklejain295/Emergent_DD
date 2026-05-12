@@ -313,38 +313,82 @@ export default function ClientsPage() {
           {!search && filterType === 'all' && filterTag === 'all' && <button onClick={openAdd} className="btn-primary">Add First Client</button>}
         </div>
 
-      ) : viewMode === 'board' ? (
-        /* ── BOARD VIEW ─────────────────────────────────────────── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {displayed.map((c, i) => (
-            <div key={c.id || i} className="card p-5 group relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: GRADIENTS[i % GRADIENTS.length] }} />
-              <div className="flex items-center gap-3 mb-4 mt-1">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0" style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
-                  {getInitials(c)}
-                </div>
-                <div className="min-w-0">
-                  {c.type === 'business' && c.company && <p className="font-bold text-[#111827] truncate text-sm">{c.company}</p>}
-                  <p className={`truncate ${c.type === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-[#111827] text-sm'}`}>{c.name}</p>
-                  {c.type === 'individual' && c.doing_business_as && <p className="text-xs text-gray-600 truncate">DBA: {c.doing_business_as}</p>}
-                </div>
+      ) : viewMode === 'board' ? (() => {
+        /* ── BOARD VIEW — grouped by type ──────────────────────── */
+        const ClientCard = ({ c, i }) => (
+          <div key={c.Id || i} className="card p-5 group relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: GRADIENTS[i % GRADIENTS.length] }} />
+            <div className="flex items-center gap-3 mb-4 mt-1">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0"
+                   style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
+                {getInitials(c)}
               </div>
-              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full mb-3 ${c.type === 'business' ? 'bg-violet-100 text-violet-700' : 'bg-pink-50 text-pink-700'}`}>
-                {c.type === 'business' ? <Building size={11} /> : <User size={11} />}
-                {c.type === 'business' ? 'Business' : 'Individual'}
-              </span>
-              <div className="space-y-1.5 text-sm text-gray-600 mb-3">
-                <div className="flex items-center gap-2 truncate"><Mail size={13} className="text-gray-600 flex-shrink-0" /><span className="truncate">{c.email || '—'}</span></div>
-                {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-gray-600 flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
-              </div>
-              {c.tags && <div className="mb-4"><TagPills tags={c.tags} /></div>}
-              <div className="flex gap-2 pt-3 border-t border-[#F3F4F6] opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-[#374151] hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>
-                <button onClick={() => handleDelete(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={12} /> Delete</button>
+              <div className="min-w-0">
+                {c.type === 'business' && c.company && <p className="font-bold text-gray-900 truncate text-sm">{c.company}</p>}
+                <p className={`truncate ${c.type === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-gray-900 text-sm'}`}>{c.name}</p>
+                {c.type === 'individual' && c.doing_business_as && <p className="text-xs text-gray-500 truncate">DBA: {c.doing_business_as}</p>}
               </div>
             </div>
-          ))}
-        </div>
+            <div className="space-y-1.5 text-sm text-gray-600 mb-3">
+              <div className="flex items-center gap-2 truncate"><Mail size={13} className="text-gray-500 flex-shrink-0" /><span className="truncate">{c.email || '—'}</span></div>
+              {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-gray-500 flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
+            </div>
+            {c.tags && <div className="mb-4"><TagPills tags={c.tags} /></div>}
+            <div className="flex gap-2 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => openEdit(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>
+              <button onClick={() => handleDelete(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={12} /> Delete</button>
+            </div>
+          </div>
+        );
+
+        const businesses  = displayed.filter(c => c.type === 'business');
+        const individuals = displayed.filter(c => !c.type || c.type === 'individual');
+        const showBoth    = filterType === 'all';
+
+        return (
+          <div className="space-y-8">
+            {/* Business clients */}
+            {(showBoth || filterType === 'business') && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 bg-violet-100 text-violet-700 px-3 py-1.5 rounded-xl">
+                    <Building size={15} />
+                    <span className="font-semibold text-sm">Business Clients</span>
+                    <span className="bg-violet-200 text-violet-800 text-xs font-bold px-2 py-0.5 rounded-full">{businesses.length}</span>
+                  </div>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+                {businesses.length === 0
+                  ? <p className="text-sm text-gray-400 pl-1">No business clients yet</p>
+                  : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {businesses.map((c, i) => <ClientCard key={c.Id || i} c={c} i={i} />)}
+                    </div>
+                }
+              </div>
+            )}
+
+            {/* Individual clients */}
+            {(showBoth || filterType === 'individual') && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 bg-pink-50 text-pink-700 px-3 py-1.5 rounded-xl">
+                    <User size={15} />
+                    <span className="font-semibold text-sm">Individual Clients</span>
+                    <span className="bg-pink-100 text-pink-800 text-xs font-bold px-2 py-0.5 rounded-full">{individuals.length}</span>
+                  </div>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+                {individuals.length === 0
+                  ? <p className="text-sm text-gray-400 pl-1">No individual clients yet</p>
+                  : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {individuals.map((c, i) => <ClientCard key={c.Id || i} c={c} i={i} />)}
+                    </div>
+                }
+              </div>
+            )}
+          </div>
+        );
+      })()
 
       ) : (
         /* ── LIST VIEW ──────────────────────────────────────────── */
