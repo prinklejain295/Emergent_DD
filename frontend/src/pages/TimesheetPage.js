@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import {
   Clock, Plus, Trash2, X, Search, Download,
-  Users, BarChart2, List, ChevronDown, ChevronUp,
-  Timer, TrendingUp,
+  Users, BarChart2, List, Timer, TrendingUp, Coffee,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -27,6 +26,13 @@ const fmtMins = (m) => {
 
 const today = () => new Date().toISOString().split('T')[0];
 
+const INTERNAL_CLIENT = 'Internal / Admin';
+
+const INTERNAL_ACTIVITIES = [
+  'Team Meeting', 'One-on-One', 'Training / Learning',
+  'Business Development', 'Admin Tasks', 'Strategy / Planning', 'Other',
+];
+
 const EMPTY_FORM = {
   client_name: '', service_category: '', minutes: '', date: today(), notes: '', user_name: '',
 };
@@ -41,46 +47,77 @@ export default function TimesheetPage() {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = ['admin', 'manager'].includes(currentUser.role);
 
-  const [entries, setEntries]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [tab, setTab]             = useState('entries');
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm]           = useState({ ...EMPTY_FORM, user_name: currentUser.name || '' });
-  const [saving, setSaving]       = useState(false);
+  const [entries, setEntries]       = useState([]);
+  const [clientsList, setClientsList] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [tab, setTab]               = useState('entries');
+  const [showModal, setShowModal]   = useState(false);
+  const [modalType, setModalType]   = useState('client'); // 'client' | 'internal'
+  const [form, setForm]             = useState(EMPTY_FORM);
+  const [customClient, setCustomClient] = useState('');  // when "Other" is selected
+  const [saving, setSaving]         = useState(false);
 
   /* Filters */
-  const [search, setSearch]             = useState('');
+  const [search, setSearch]               = useState('');
   const [filterEmployee, setFilterEmployee] = useState('all');
-  const [filterClient, setFilterClient] = useState('all');
-  const [dateFrom, setDateFrom]         = useState('');
-  const [dateTo, setDateTo]             = useState('');
+  const [filterClient, setFilterClient]   = useState('all');
+  const [dateFrom, setDateFrom]           = useState('');
+  const [dateTo, setDateTo]               = useState('');
 
-  useEffect(() => { fetchEntries(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const fetchEntries = async () => {
+  const fetchAll = async () => {
     try {
-      const res = await axios.get(`${API}/timesheets`, getAuthHeaders());
-      setEntries(Array.isArray(res.data) ? res.data : []);
+      const [tsRes, clRes] = await Promise.all([
+        axios.get(`${API}/timesheets`, getAuthHeaders()),
+        axios.get(`${API}/clients`, getAuthHeaders()),
+      ]);
+      setEntries(Array.isArray(tsRes.data) ? tsRes.data : []);
+      setClientsList(Array.isArray(clRes.data) ? clRes.data.map(c => c.name).filter(Boolean) : []);
     } catch (err) {
       toast.error(await toastMsg('Timesheet.fetch', err, 'Failed to load timesheets'));
     } finally { setLoading(false); }
   };
 
+  const resolvedClient = form.client_name === '__other__' ? customClient : form.client_name;
+
+  const openClientModal = () => {
+    setModalType('client');
+    setForm(EMPTY_FORM);
+    setCustomClient('');
+    setShowModal(true);
+  };
+
+  const openInternalModal = () => {
+    setModalType('internal');
+    setForm({ ...EMPTY_FORM, client_name: INTERNAL_CLIENT });
+    setCustomClient('');
+    setShowModal(true);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.client_name.trim()) { toast.error('Client name is required'); return; }
+    const clientName = resolvedClient.trim();
+    if (!clientName) { toast.error('Client name is required'); return; }
+    if (!form.user_name.trim()) { toast.error('Your name is required'); return; }
     if (!form.minutes || parseInt(form.minutes) <= 0) { toast.error('Enter valid minutes'); return; }
     setSaving(true);
     try {
+      const serviceCategory = (modalType === 'internal' && form.service_category === 'Other')
+        ? customClient || 'Other'
+        : form.service_category;
       await axios.post(`${API}/timesheets`, {
         ...form,
-        user_name: form.user_name || currentUser.name || '',
-        minutes: parseInt(form.minutes),
+        client_name:      clientName,
+        service_category: serviceCategory,
+        user_name:        form.user_name.trim(),
+        minutes:          parseInt(form.minutes),
       }, getAuthHeaders());
       toast.success('Time logged');
       setShowModal(false);
-      setForm({ ...EMPTY_FORM, user_name: currentUser.name || '' });
-      fetchEntries();
+      setForm(EMPTY_FORM);
+      setCustomClient('');
+      fetchAll();
     } catch (err) {
       toast.error(await toastMsg('Timesheet.save', err, 'Failed to log time'));
     } finally { setSaving(false); }
@@ -91,7 +128,7 @@ export default function TimesheetPage() {
     try {
       await axios.delete(`${API}/timesheets/${entry.Id}`, getAuthHeaders());
       toast.success('Entry deleted');
-      fetchEntries();
+      fetchAll();
     } catch (err) {
       toast.error(await toastMsg('Timesheet.delete', err, 'Failed to delete'));
     }
@@ -161,11 +198,15 @@ export default function TimesheetPage() {
           <h1 className="page-title">Timesheets</h1>
           <p className="page-description">Track time spent per client across the team</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={exportExcel} className="btn-secondary flex items-center gap-2 text-sm py-2 px-4">
             <Download size={15} /> Export
           </button>
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+          <button onClick={openInternalModal}
+                  className="flex items-center gap-2 text-sm py-2 px-4 rounded-xl font-semibold border-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all">
+            <Coffee size={15} /> Log Internal Time
+          </button>
+          <button onClick={openClientModal} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Log Time
           </button>
         </div>
@@ -354,21 +395,36 @@ export default function TimesheetPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 modal-overlay">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
-            <div className="flex items-center justify-between px-6 py-4 bg-gray-900">
-              <div>
-                <h2 className="text-lg font-bold text-white">Log Time</h2>
-                <p className="text-gray-400 text-xs mt-0.5">Record time spent on a client task</p>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4"
+                 style={{ background: modalType === 'internal' ? '#1E293B' : '#111827' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                  {modalType === 'internal' ? <Coffee size={17} className="text-white" /> : <Timer size={17} className="text-white" />}
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">
+                    {modalType === 'internal' ? 'Log Internal Time' : 'Log Client Time'}
+                  </h2>
+                  <p className="text-gray-400 text-xs mt-0.5">
+                    {modalType === 'internal' ? 'Meeting, training, admin, etc.' : 'Time spent on a client task'}
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+              <button onClick={() => setShowModal(false)} className="text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} noValidate className="p-6 space-y-4">
+            <form onSubmit={handleSave} noValidate autoComplete="off" className="p-6 space-y-4">
+
+              {/* Name + Date */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Your Name *</label>
-                  <input type="text" className="input-field" placeholder="Your name"
+                  <input type="text" className="input-field" placeholder="Enter your name" autoFocus
+                         autoComplete="off"
                          value={form.user_name} onChange={e => setForm(f => ({ ...f, user_name: e.target.value }))} />
                 </div>
                 <div>
@@ -378,23 +434,59 @@ export default function TimesheetPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="label">Client Name *</label>
-                <input type="text" className="input-field" placeholder="Client name"
-                       value={form.client_name} onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))} />
-              </div>
+              {/* Client — dropdown for client type, fixed for internal */}
+              {modalType === 'client' ? (
+                <div>
+                  <label className="label">Client *</label>
+                  <select className="input-field text-sm"
+                          value={form.client_name}
+                          onChange={e => { setForm(f => ({ ...f, client_name: e.target.value })); setCustomClient(''); }}>
+                    <option value="">— Select client —</option>
+                    {clientsList.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="__other__">Other (type manually)</option>
+                  </select>
+                  {form.client_name === '__other__' && (
+                    <input type="text" className="input-field mt-2" placeholder="Type client name"
+                           value={customClient} onChange={e => setCustomClient(e.target.value)} autoFocus />
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="label">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {INTERNAL_ACTIVITIES.map(a => (
+                      <button key={a} type="button"
+                              onClick={() => setForm(f => ({ ...f, service_category: a }))}
+                              className={`text-xs px-3 py-1.5 rounded-full border-2 font-semibold transition-all ${
+                                form.service_category === a
+                                  ? 'border-gray-900 bg-gray-900 text-white'
+                                  : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                              }`}>
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                  {form.service_category === 'Other' && (
+                    <input type="text" className="input-field mt-2" placeholder="Describe the activity"
+                           value={customClient} onChange={e => setCustomClient(e.target.value)} />
+                  )}
+                </div>
+              )}
 
-              <div>
-                <label className="label">Service / Task</label>
-                <input type="text" className="input-field" placeholder="e.g. GST Filing, ITR Preparation"
-                       value={form.service_category} onChange={e => setForm(f => ({ ...f, service_category: e.target.value }))} />
-              </div>
+              {/* Service/Task — only for client type */}
+              {modalType === 'client' && (
+                <div>
+                  <label className="label">Service / Task</label>
+                  <input type="text" className="input-field" placeholder="e.g. GST Filing, ITR Preparation"
+                         value={form.service_category} onChange={e => setForm(f => ({ ...f, service_category: e.target.value }))} />
+                </div>
+              )}
 
+              {/* Minutes */}
               <div>
                 <label className="label">Time Taken (minutes) *</label>
                 <div className="relative">
-                  <input type="number" min="1" max="9999" className="input-field pr-16"
-                         placeholder="e.g. 90"
+                  <input type="number" min="1" max="9999" className="input-field pr-16" placeholder="e.g. 90"
                          value={form.minutes} onChange={e => setForm(f => ({ ...f, minutes: e.target.value }))} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">
                     {form.minutes ? fmtMins(form.minutes) : 'min'}
@@ -405,7 +497,7 @@ export default function TimesheetPage() {
               <div>
                 <label className="label">Notes</label>
                 <textarea className="textarea-field text-sm" rows={2}
-                          placeholder="What was done? Any blockers?"
+                          placeholder={modalType === 'internal' ? 'Meeting agenda, outcomes, attendees…' : 'What was done? Any observations?'}
                           value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
 
