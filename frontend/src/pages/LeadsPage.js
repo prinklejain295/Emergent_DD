@@ -169,6 +169,10 @@ export default function LeadsPage() {
           return;
         }
 
+        /* Debug: show detected headers */
+        const detectedHeaders = Object.keys(rows[0]).join(' | ');
+        toast.info(`Detected columns: ${detectedHeaders}`, { duration: 10000 });
+
         /* Normalize all keys to lowercase-trimmed for flexible matching */
         const normalize = (row) => {
           const out = {};
