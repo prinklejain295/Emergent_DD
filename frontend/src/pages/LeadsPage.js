@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -76,7 +76,6 @@ export default function LeadsPage() {
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData]   = useState(EMPTY);
   const [importing, setImporting] = useState(false);
-  const importRef = useRef(null);
 
   /* Filters */
   const [search, setSearch]           = useState('');
@@ -149,46 +148,61 @@ export default function LeadsPage() {
     }
   };
 
-  /* Excel import */
-  const handleImport = async (e) => {
+  /* Excel import — uses FileReader for broad browser compatibility */
+  const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    e.target.value = '';
+    /* reset input so the same file can be re-selected */
+    e.target.value = null;
     setImporting(true);
-    try {
-      const data = await file.arrayBuffer();
-      const wb   = XLSX.read(new Uint8Array(data), { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      if (!rows.length) { toast.error('No data rows found in the file'); setImporting(false); return; }
 
-      let created = 0, skipped = 0;
-      for (const row of rows) {
-        const name = String(row['name'] || row['Name'] || row['Contact Name'] || '').trim();
-        if (!name) { skipped++; continue; }
-        const payload = {
-          name,
-          business_name:       String(row['business_name']      || row['Business Name']   || '').trim(),
-          platform:            String(row['platform']           || row['Platform']         || '').trim(),
-          status:              String(row['status']             || row['Status']           || 'New Lead').trim(),
-          lead_manager:        String(row['lead_manager']       || row['Lead Manager']     || '').trim(),
-          lead_generated_date: String(row['lead_generated_date']|| row['Lead Generated Date'] || '').trim() || null,
-          last_followup_date:  String(row['last_followup_date'] || row['Last Follow-up']   || '').trim() || null,
-          notes:               String(row['notes']              || row['Notes']            || '').trim(),
-        };
-        try {
-          await axios.post(`${API}/leads`, payload, getAuthHeaders());
-          created++;
-        } catch (_err) {
-          skipped++;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const wb   = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        if (!rows.length) {
+          toast.error('No data rows found in the file');
+          setImporting(false);
+          return;
         }
+
+        let created = 0, skipped = 0;
+        for (const row of rows) {
+          const name = String(row['name'] || row['Name'] || row['Contact Name'] || '').trim();
+          if (!name) { skipped++; continue; }
+          const payload = {
+            name,
+            business_name:       String(row['business_name']       || row['Business Name']       || '').trim(),
+            platform:            String(row['platform']            || row['Platform']            || '').trim(),
+            status:              String(row['status']              || row['Status']              || 'New Lead').trim(),
+            lead_manager:        String(row['lead_manager']        || row['Lead Manager']        || '').trim(),
+            lead_generated_date: String(row['lead_generated_date'] || row['Lead Generated Date'] || '').trim() || null,
+            last_followup_date:  String(row['last_followup_date']  || row['Last Follow-up']      || '').trim() || null,
+            notes:               String(row['notes']               || row['Notes']               || '').trim(),
+          };
+          try {
+            await axios.post(`${API}/leads`, payload, getAuthHeaders());
+            created++;
+          } catch (_err) { skipped++; }
+        }
+
+        toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` · ${skipped} skipped` : ''}`);
+        fetchLeads();
+      } catch (err) {
+        console.error('Import error:', err);
+        toast.error(`Import failed: ${err.message || 'Could not parse file'}`);
+      } finally {
+        setImporting(false);
       }
-      toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` · ${skipped} skipped` : ''}`);
-      fetchLeads();
-    } catch (err) {
-      console.error('Import error:', err);
-      toast.error(`Import failed: ${err.message || 'Could not read file'}`);
-    } finally { setImporting(false); }
+    };
+    reader.onerror = () => {
+      toast.error('Could not read the file');
+      setImporting(false);
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   /* Quick status change from table */
@@ -251,11 +265,10 @@ export default function LeadsPage() {
           <p className="page-description">{leads.length} lead{leads.length !== 1 ? 's' : ''} · {leads.filter(l => l.status === 'Converted').length} converted</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
-          <button onClick={() => importRef.current?.click()} disabled={importing}
-                  className="btn-secondary flex items-center gap-2 text-sm py-2 px-4">
+          <label className={`btn-secondary flex items-center gap-2 text-sm py-2 px-4 cursor-pointer ${importing ? 'opacity-60 pointer-events-none' : ''}`}>
             <Upload size={16} /> {importing ? 'Importing…' : 'Import Excel'}
-          </button>
+            <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} disabled={importing} />
+          </label>
           <button onClick={openAdd} className="btn-primary flex items-center gap-2">
             <Plus size={18} /> Add Lead
           </button>
