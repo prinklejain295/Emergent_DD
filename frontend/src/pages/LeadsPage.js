@@ -159,39 +159,59 @@ export default function LeadsPage() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        const wb   = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
-        const ws   = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const wb  = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const ws  = wb.Sheets[wb.SheetNames[0]];
 
-        if (!rows.length) {
-          toast.error('No data rows found in the file');
+        /* Read as raw arrays first so we can find the real header row */
+        const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        if (!allRows.length) {
+          toast.error('No data found in the file');
           setImporting(false);
           return;
         }
 
-        /* Debug: show detected headers */
-        const detectedHeaders = Object.keys(rows[0]).join(' | ');
-        toast.info(`Detected columns: ${detectedHeaders}`, { duration: 10000 });
+        /* Find the header row — first row where any cell contains a
+           recognisable lead-related keyword */
+        const LEAD_KEYWORDS = ['name','contact','client','platform','status','source',
+                               'notes','remarks','manager','follow','date','business','company'];
+        let headerRowIdx = 0;
+        for (let i = 0; i < Math.min(allRows.length, 15); i++) {
+          const cells = allRows[i].map(c => String(c).toLowerCase().trim());
+          if (LEAD_KEYWORDS.some(kw => cells.some(c => c.includes(kw)))) {
+            headerRowIdx = i;
+            break;
+          }
+        }
 
-        /* Normalize all keys to lowercase-trimmed for flexible matching */
-        const normalize = (row) => {
-          const out = {};
-          Object.keys(row).forEach(k => { out[k.toLowerCase().trim()] = String(row[k] ?? '').trim(); });
-          return out;
+        const headers  = allRows[headerRowIdx].map(c => String(c).toLowerCase().trim());
+        const dataRows = allRows.slice(headerRowIdx + 1).filter(r => r.some(c => c !== '' && c != null));
+
+        if (!dataRows.length) {
+          toast.error('No data rows found after the header row');
+          setImporting(false);
+          return;
+        }
+
+        /* Map each data row to an object keyed by normalised header */
+        const toObj = (row) => {
+          const obj = {};
+          headers.forEach((h, i) => { if (h) obj[h] = String(row[i] ?? '').trim(); });
+          return obj;
         };
 
-        /* Pick a value by trying multiple possible column names */
+        /* Pick a value by trying multiple possible column name fragments */
         const pick = (row, ...keys) => {
           for (const k of keys) {
-            const v = row[k.toLowerCase().trim()];
-            if (v && v !== '') return v;
+            const match = Object.keys(row).find(h => h.includes(k));
+            if (match && row[match]) return row[match];
           }
           return '';
         };
 
         let created = 0, skipped = 0;
-        for (const rawRow of rows) {
-          const row  = normalize(rawRow);
+        for (const rawRow of dataRows) {
+          const row  = toObj(rawRow);
           const name = pick(row, 'name', 'contact name', 'contact', 'full name', 'lead name', 'client name');
           if (!name) { skipped++; continue; }
           const payload = {
