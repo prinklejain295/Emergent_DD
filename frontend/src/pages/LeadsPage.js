@@ -157,9 +157,10 @@ export default function LeadsPage() {
     setImporting(true);
     try {
       const data = await file.arrayBuffer();
-      const wb   = XLSX.read(data);
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-      if (!rows.length) { toast.error('No data rows found in the file'); return; }
+      const wb   = XLSX.read(new Uint8Array(data), { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { toast.error('No data rows found in the file'); setImporting(false); return; }
 
       let created = 0, skipped = 0;
       for (const row of rows) {
@@ -167,21 +168,26 @@ export default function LeadsPage() {
         if (!name) { skipped++; continue; }
         const payload = {
           name,
-          business_name:      String(row['business_name'] || row['Business Name'] || '').trim(),
-          platform:           String(row['platform'] || row['Platform'] || '').trim(),
-          status:             String(row['status'] || row['Status'] || 'New Lead').trim(),
-          last_followup_date: String(row['last_followup_date'] || row['Last Follow-up'] || '').trim() || null,
-          notes:              String(row['notes'] || row['Notes'] || '').trim(),
+          business_name:       String(row['business_name']      || row['Business Name']   || '').trim(),
+          platform:            String(row['platform']           || row['Platform']         || '').trim(),
+          status:              String(row['status']             || row['Status']           || 'New Lead').trim(),
+          lead_manager:        String(row['lead_manager']       || row['Lead Manager']     || '').trim(),
+          lead_generated_date: String(row['lead_generated_date']|| row['Lead Generated Date'] || '').trim() || null,
+          last_followup_date:  String(row['last_followup_date'] || row['Last Follow-up']   || '').trim() || null,
+          notes:               String(row['notes']              || row['Notes']            || '').trim(),
         };
         try {
           await axios.post(`${API}/leads`, payload, getAuthHeaders());
           created++;
-        } catch { skipped++; }
+        } catch (_err) {
+          skipped++;
+        }
       }
-      toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` (${skipped} skipped)` : ''}`);
+      toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` · ${skipped} skipped` : ''}`);
       fetchLeads();
     } catch (err) {
-      toast.error('Failed to read Excel file');
+      console.error('Import error:', err);
+      toast.error(`Import failed: ${err.message || 'Could not read file'}`);
     } finally { setImporting(false); }
   };
 
