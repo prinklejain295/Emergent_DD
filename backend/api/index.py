@@ -248,7 +248,7 @@ def update_client(client_id):
     
     data = request.get_json()
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
-        "Id": client_id, "name": data.get('name'), "email": data.get('email'),
+        "Id": int(client_id), "name": data.get('name'), "email": data.get('email'),
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
@@ -261,8 +261,8 @@ def delete_client(client_id):
     user, error, code = get_token()
     if error:
         return error, code
-    
-    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {"Id": client_id})
+
+    nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {"Id": int(client_id)})
     return jsonify({"message": "Client deleted"})
 
 @app.route('/api/clients/upload-excel', methods=['POST'])

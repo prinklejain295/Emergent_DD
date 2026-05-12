@@ -194,7 +194,7 @@ export default function ClientsPage() {
     };
     try {
       if (editingClient) {
-        await axios.put(`${API}/clients/${editingClient.id || editingClient.Id}`, payload, getAuthHeaders());
+        await axios.put(`${API}/clients/${editingClient.Id}`, payload, getAuthHeaders());
         toast.success('Client updated');
       } else {
         await axios.post(`${API}/clients`, payload, getAuthHeaders());
@@ -210,7 +210,7 @@ export default function ClientsPage() {
   const handleDelete = async (c) => {
     if (!window.confirm(`Delete "${c.name}"?`)) return;
     try {
-      await axios.delete(`${API}/clients/${c.id || c.Id}`, getAuthHeaders());
+      await axios.delete(`${API}/clients/${c.Id}`, getAuthHeaders());
       toast.success('Deleted');
       fetchClients();
     } catch (err) {
