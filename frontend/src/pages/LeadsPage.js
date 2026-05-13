@@ -81,19 +81,26 @@ export default function LeadsPage() {
   const [bulkStatus, setBulkStatus] = useState('');
   const [bulkActing, setBulkActing] = useState(false);
 
-  /* Filters */
-  const [search, setSearch]           = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterPlatform, setFilterPlatform] = useState('all');
-  const [sortKey, setSortKey]         = useState('created_at');
-  const [sortDir, setSortDir]         = useState('desc');
+  /* Global search */
+  const [search, setSearch] = useState('');
+
+  /* Column-level filters */
+  const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'', dateFrom:'', dateTo:'' };
+  const [cf, setCf]   = useState(EMPTY_CF);
+  const setCol        = (k, v) => { setCf(p => ({ ...p, [k]: v })); setPage(1); };
+  const clearFilters  = () => { setCf(EMPTY_CF); setSearch(''); setPage(1); };
+  const anyFilter     = search || Object.entries(cf).some(([k, v]) => v !== '' && v !== 'all');
+
+  /* Sort */
+  const [sortKey, setSortKey] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
 
   /* Pagination */
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
 
   useEffect(() => { fetchLeads(); }, []);
-  useEffect(() => { setSelected(new Set()); setPage(1); }, [search, filterStatus, filterPlatform, sortKey, sortDir]);
+  useEffect(() => { setSelected(new Set()); setPage(1); }, [search, cf, sortKey, sortDir]);
 
   const fetchLeads = async () => {
     try {
@@ -338,9 +345,14 @@ export default function LeadsPage() {
   const displayed = leads
     .filter(l => {
       const q = search.toLowerCase();
-      if (q && !(l.name || '').toLowerCase().includes(q) && !(l.business_name || '').toLowerCase().includes(q)) return false;
-      if (filterStatus   !== 'all' && l.status   !== filterStatus)   return false;
-      if (filterPlatform !== 'all' && l.platform !== filterPlatform) return false;
+      if (q && !(l.name||'').toLowerCase().includes(q) && !(l.business_name||'').toLowerCase().includes(q) && !(l.lead_manager||'').toLowerCase().includes(q)) return false;
+      if (cf.name     && !(l.name          ||'').toLowerCase().includes(cf.name.toLowerCase()))    return false;
+      if (cf.business && !(l.business_name ||'').toLowerCase().includes(cf.business.toLowerCase())) return false;
+      if (cf.manager  && !(l.lead_manager  ||'').toLowerCase().includes(cf.manager.toLowerCase()))  return false;
+      if (cf.platform !== 'all' && l.platform !== cf.platform) return false;
+      if (cf.status   !== 'all' && l.status   !== cf.status)   return false;
+      if (cf.dateFrom && (l.last_followup_date || '') < cf.dateFrom) return false;
+      if (cf.dateTo   && (l.last_followup_date || '') > cf.dateTo)   return false;
       return true;
     })
     .sort((a, b) => {
@@ -387,23 +399,19 @@ export default function LeadsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="card p-4 mb-6 flex flex-col sm:flex-row gap-3">
+      <div className="card p-3 mb-4 flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search by name or business…" className="input-field pl-9 text-sm h-10"
-                 value={search} onChange={e => setSearch(e.target.value)} />
+          <input type="text" placeholder="Quick search name, business, manager…" className="input-field pl-9 text-sm h-9"
+                 value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
         </div>
-        <select className="input-field text-sm h-10 sm:w-44" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="all">All Statuses</option>
-          {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
-        </select>
-        <select className="input-field text-sm h-10 sm:w-40" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
-          <option value="all">All Platforms</option>
-          {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.value}</option>)}
-        </select>
-        {/* View toggle */}
-        <div className="flex rounded-xl border-2 border-[#E5E7EB] overflow-hidden h-10 self-center">
+        {anyFilter && (
+          <button onClick={clearFilters} className="text-xs font-semibold text-red-500 hover:text-red-700 whitespace-nowrap px-2">
+            ✕ Clear filters
+          </button>
+        )}
+        <div className="flex rounded-xl border-2 border-gray-200 overflow-hidden h-9 self-center flex-shrink-0">
           {[['table','≡ Table'],['pipeline','◫ Pipeline']].map(([mode, label]) => (
             <button key={mode} onClick={() => setViewMode(mode)}
                     className={`px-3 text-xs font-semibold transition-colors ${viewMode === mode ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
@@ -445,13 +453,13 @@ export default function LeadsPage() {
       )}
 
       {/* ── Status summary chips ────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-4">
         {STATUSES.map(s => {
           const count = leads.filter(l => l.status === s.label).length;
           if (!count) return null;
           return (
-            <button key={s.label} onClick={() => setFilterStatus(filterStatus === s.label ? 'all' : s.label)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${filterStatus === s.label ? 'ring-2 ring-gray-900 ring-offset-1' : ''}`}
+            <button key={s.label} onClick={() => { setCol('status', cf.status === s.label ? 'all' : s.label); }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${cf.status === s.label ? 'ring-2 ring-gray-900 ring-offset-1' : ''}`}
                     style={{ backgroundColor: s.bg, color: s.text, borderColor: s.border }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.dot }} />
               {s.label} <span className="font-bold ml-0.5">{count}</span>
@@ -478,14 +486,13 @@ export default function LeadsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
+                {/* ── Sort row ── */}
                 <tr style={{ background: '#111827' }}>
-                  {/* Select-all checkbox */}
-                  <th className="px-3 py-3.5 w-10">
+                  <th className="px-3 py-3 w-10">
                     <button onClick={() => toggleSelectAll(paginated.map(l => l.Id))}
                             className="text-white/70 hover:text-white transition-colors">
                       {paginated.length > 0 && paginated.every(l => selected.has(l.Id))
-                        ? <CheckSquare size={16} />
-                        : <Square size={16} />}
+                        ? <CheckSquare size={15} /> : <Square size={15} />}
                     </button>
                   </th>
                   {[
@@ -494,11 +501,71 @@ export default function LeadsPage() {
                     ['last_followup_date','Last Follow-up'],['lead_manager','Manager'],
                     ['','Notes'],['',''],
                   ].map(([key, label]) => (
-                    <th key={key + label} onClick={() => key && toggleSort(key)}
-                        className={`px-4 py-3.5 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}>
+                    <th key={key+label} onClick={() => key && toggleSort(key)}
+                        className={`px-4 py-3 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer select-none hover:bg-white/10 transition-colors' : ''}`}>
                       {label}{key && <SortIcon col={key} />}
                     </th>
                   ))}
+                </tr>
+
+                {/* ── Filter row ── */}
+                <tr className="bg-gray-100 border-b border-gray-200">
+                  <td className="px-3 py-2" />
+                  {/* Name */}
+                  <td className="px-2 py-2">
+                    <input type="text" placeholder="Name…" value={cf.name}
+                           onChange={e => setCol('name', e.target.value)}
+                           className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500" />
+                  </td>
+                  {/* Business */}
+                  <td className="px-2 py-2">
+                    <input type="text" placeholder="Business…" value={cf.business}
+                           onChange={e => setCol('business', e.target.value)}
+                           className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500" />
+                  </td>
+                  {/* Platform */}
+                  <td className="px-2 py-2">
+                    <select value={cf.platform} onChange={e => setCol('platform', e.target.value)}
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500 bg-white">
+                      <option value="all">All</option>
+                      {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.value}</option>)}
+                    </select>
+                  </td>
+                  {/* Status */}
+                  <td className="px-2 py-2">
+                    <select value={cf.status} onChange={e => setCol('status', e.target.value)}
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500 bg-white">
+                      <option value="all">All</option>
+                      {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+                    </select>
+                  </td>
+                  {/* Generated — no filter */}
+                  <td className="px-2 py-2" />
+                  {/* Last Follow-up from/to */}
+                  <td className="px-2 py-2">
+                    <div className="flex gap-1">
+                      <input type="date" value={cf.dateFrom} onChange={e => setCol('dateFrom', e.target.value)}
+                             title="From date"
+                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
+                      <input type="date" value={cf.dateTo} onChange={e => setCol('dateTo', e.target.value)}
+                             title="To date"
+                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
+                    </div>
+                  </td>
+                  {/* Manager */}
+                  <td className="px-2 py-2">
+                    <input type="text" placeholder="Manager…" value={cf.manager}
+                           onChange={e => setCol('manager', e.target.value)}
+                           className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500" />
+                  </td>
+                  {/* Notes + Actions */}
+                  <td className="px-2 py-2" />
+                  <td className="px-2 py-2">
+                    {anyFilter && (
+                      <button onClick={clearFilters} title="Clear all filters"
+                              className="text-xs text-red-500 hover:text-red-700 font-semibold">✕</button>
+                    )}
+                  </td>
                 </tr>
               </thead>
               <tbody>
