@@ -59,7 +59,7 @@ const EMPTY = {
   lead_manager: '', notes: '',
 };
 
-const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'', dateFrom:'', dateTo:'' };
+const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'all', genFrom:'', genTo:'', dateFrom:'', dateTo:'' };
 
 const GRADIENTS = [
   'linear-gradient(135deg,#7C3AED,#A855F7)',
@@ -100,7 +100,8 @@ export default function LeadsPage() {
   /* Helpers defined after all state so no use-before-define */
   const setCol       = (k, v) => { setCf(prev => ({ ...prev, [k]: v })); setPage(1); };
   const clearFilters = () => { setCf(EMPTY_CF); setSearch(''); setPage(1); };
-  const anyFilter    = search || Object.entries(cf).some(([, v]) => v !== '' && v !== 'all');
+  const anyFilter      = search || Object.entries(cf).some(([, v]) => v !== '' && v !== 'all');
+  const managerOptions = [...new Set(leads.map(l => l.lead_manager).filter(Boolean))].sort();
 
   useEffect(() => { fetchLeads(); }, []);
   const cfKey = JSON.stringify(cf);
@@ -233,8 +234,6 @@ export default function LeadsPage() {
 
         const dataRows = allRows.slice(dataStart).filter(r => r.some(c => str(c) !== ''));
 
-        /* DEBUG — remove after confirming column names */
-        toast.info(`Sections: ${sections.length} | Headers: ${sections.map(s => `[${s.label}]: ${s.headers.filter(Boolean).join(', ')}`).join(' || ')}`, { duration: 20000 });
 
         if (!dataRows.length) { toast.error('No data rows found'); setImporting(false); return; }
 
@@ -357,11 +356,13 @@ export default function LeadsPage() {
       if (q && !(l.name||'').toLowerCase().includes(q) && !(l.business_name||'').toLowerCase().includes(q) && !(l.lead_manager||'').toLowerCase().includes(q)) return false;
       if (cf.name     && !(l.name          ||'').toLowerCase().includes(cf.name.toLowerCase()))    return false;
       if (cf.business && !(l.business_name ||'').toLowerCase().includes(cf.business.toLowerCase())) return false;
-      if (cf.manager  && !(l.lead_manager  ||'').toLowerCase().includes(cf.manager.toLowerCase()))  return false;
-      if (cf.platform !== 'all' && l.platform !== cf.platform) return false;
-      if (cf.status   !== 'all' && l.status   !== cf.status)   return false;
-      if (cf.dateFrom && (l.last_followup_date || '') < cf.dateFrom) return false;
-      if (cf.dateTo   && (l.last_followup_date || '') > cf.dateTo)   return false;
+      if (cf.platform !== 'all' && l.platform    !== cf.platform) return false;
+      if (cf.status   !== 'all' && l.status      !== cf.status)   return false;
+      if (cf.manager  !== 'all' && (l.lead_manager||'') !== cf.manager) return false;
+      if (cf.genFrom  && (l.lead_generated_date  || '') < cf.genFrom) return false;
+      if (cf.genTo    && (l.lead_generated_date  || '') > cf.genTo)   return false;
+      if (cf.dateFrom && (l.last_followup_date   || '') < cf.dateFrom) return false;
+      if (cf.dateTo   && (l.last_followup_date   || '') > cf.dateTo)   return false;
       return true;
     })
     .sort((a, b) => {
@@ -548,24 +549,35 @@ export default function LeadsPage() {
                       {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                     </select>
                   </td>
-                  {/* Generated — no filter */}
-                  <td className="px-2 py-2" />
-                  {/* Last Follow-up from/to */}
+                  {/* Generated — date range */}
                   <td className="px-2 py-2">
                     <div className="flex gap-1">
-                      <input type="date" value={cf.dateFrom} onChange={e => setCol('dateFrom', e.target.value)}
-                             title="From date"
+                      <input type="date" value={cf.genFrom} onChange={e => setCol('genFrom', e.target.value)}
+                             title="Generated from"
                              className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
-                      <input type="date" value={cf.dateTo} onChange={e => setCol('dateTo', e.target.value)}
-                             title="To date"
+                      <input type="date" value={cf.genTo} onChange={e => setCol('genTo', e.target.value)}
+                             title="Generated to"
                              className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
                     </div>
                   </td>
-                  {/* Manager */}
+                  {/* Last Follow-up — date range */}
                   <td className="px-2 py-2">
-                    <input type="text" placeholder="Manager…" value={cf.manager}
-                           onChange={e => setCol('manager', e.target.value)}
-                           className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500" />
+                    <div className="flex gap-1">
+                      <input type="date" value={cf.dateFrom} onChange={e => setCol('dateFrom', e.target.value)}
+                             title="Follow-up from"
+                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
+                      <input type="date" value={cf.dateTo} onChange={e => setCol('dateTo', e.target.value)}
+                             title="Follow-up to"
+                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
+                    </div>
+                  </td>
+                  {/* Manager — dynamic dropdown */}
+                  <td className="px-2 py-2">
+                    <select value={cf.manager} onChange={e => setCol('manager', e.target.value)}
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-gray-500 bg-white">
+                      <option value="all">All</option>
+                      {managerOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
                   </td>
                   {/* Notes + Actions */}
                   <td className="px-2 py-2" />
