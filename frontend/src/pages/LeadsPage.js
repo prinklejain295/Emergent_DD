@@ -475,8 +475,8 @@ export default function LeadsPage() {
             <User size={36} className="text-gray-600" />
           </div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No leads found</h3>
-          <p className="text-gray-500 mb-6">{search || filterStatus !== 'all' || filterPlatform !== 'all' ? 'Try adjusting filters' : 'Start tracking potential clients'}</p>
-          {!search && filterStatus === 'all' && filterPlatform === 'all' && <button onClick={openAdd} className="btn-primary">Add First Lead</button>}
+          <p className="text-gray-500 mb-6">{anyFilter ? 'Try adjusting filters' : 'Start tracking potential clients'}</p>
+          {!anyFilter && <button onClick={openAdd} className="btn-primary">Add First Lead</button>}
         </div>
 
       ) : viewMode === 'table' ? (
