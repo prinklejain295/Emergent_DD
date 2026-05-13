@@ -190,9 +190,10 @@ export default function LeadsPage() {
                          'notes','remarks','manager','follow','date','business','company'];
         const hasKW   = (cell) => LEAD_KW.some(kw => String(cell).toLowerCase().includes(kw));
         const str     = (v)    => String(v ?? '').trim();
-        const pick    = (obj, ...keys) => {
+        const pick = (obj, ...keys) => {
           for (const k of keys) {
-            const hit = Object.keys(obj).find(h => h.includes(k));
+            /* match if header contains key OR key contains header (handles short headers like "Business") */
+            const hit = Object.keys(obj).find(h => h && (h.includes(k) || k.includes(h)));
             if (hit && obj[hit]) return obj[hit];
           }
           return '';
@@ -247,7 +248,7 @@ export default function LeadsPage() {
 
             const payload = {
               name,
-              business_name:       pick(obj, 'business name','business_name','company','firm','organisation','organization'),
+              business_name:       pick(obj, 'business name','business_name','business','company','firm','organisation','organization'),
               platform:            pick(obj, 'platform','source','channel','lead source'),
               status:              pick(obj, 'status','lead status') || 'New Lead',
               lead_manager:        pick(obj, 'lead manager','lead_manager','manager','assigned to','assignee') || sec.label || '',
