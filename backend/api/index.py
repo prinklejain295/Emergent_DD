@@ -70,8 +70,8 @@ def nc_get(endpoint: str, params: dict = None):
         return None
 
 def nc_get_all(endpoint: str, base_params: dict = None):
-    """Paginate through all NocoDB records (NocoDB caps single responses at 100)."""
-    PAGE = 500
+    """Paginate through all NocoDB records using pageInfo.isLastPage."""
+    PAGE = 100   # NocoDB hard-caps at 100 per page
     all_records = []
     offset = 0
     params = dict(base_params or {})
@@ -79,9 +79,12 @@ def nc_get_all(endpoint: str, base_params: dict = None):
     while True:
         params['offset'] = offset
         result = nc_get(endpoint, params)
-        page = (result.get('list') or []) if result else []
+        if not result:
+            break
+        page = result.get('list') or []
         all_records.extend(page)
-        if len(page) < PAGE:
+        page_info = result.get('pageInfo') or {}
+        if page_info.get('isLastPage', True) or len(page) < PAGE:
             break
         offset += PAGE
     return all_records
