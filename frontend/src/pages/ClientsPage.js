@@ -313,7 +313,7 @@ export default function ClientsPage() {
           {!search && filterType === 'all' && filterTag === 'all' && <button onClick={openAdd} className="btn-primary">Add First Client</button>}
         </div>
 
-      ) : viewMode === 'board' ? (() => {
+      ) : viewMode === 'board' ? ((() => {
         /* ── BOARD VIEW — grouped by type ──────────────────────── */
         const ClientCard = ({ c, i }) => (
           <div key={c.Id || i} className="card p-5 group relative overflow-hidden">
@@ -388,9 +388,7 @@ export default function ClientsPage() {
             )}
           </div>
         );
-      })()
-
-      ) : (
+      })()) : (
         /* ── LIST VIEW ──────────────────────────────────────────── */
         <div className="card overflow-hidden">
           {activeColFilters > 0 && (
