@@ -164,75 +164,86 @@ export default function LeadsPage() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        const wb  = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
-        const ws  = wb.Sheets[wb.SheetNames[0]];
-
-        /* Read as raw arrays first so we can find the real header row */
+        const wb      = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const ws      = wb.Sheets[wb.SheetNames[0]];
         const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-        if (!allRows.length) {
-          toast.error('No data found in the file');
-          setImporting(false);
-          return;
-        }
+        if (!allRows.length) { toast.error('No data found in the file'); setImporting(false); return; }
 
-        /* Find the header row — first row where any cell contains a
-           recognisable lead-related keyword */
-        const LEAD_KEYWORDS = ['name','contact','client','platform','status','source',
-                               'notes','remarks','manager','follow','date','business','company'];
-        let headerRowIdx = 0;
-        for (let i = 0; i < Math.min(allRows.length, 15); i++) {
-          const cells = allRows[i].map(c => String(c).toLowerCase().trim());
-          if (LEAD_KEYWORDS.some(kw => cells.some(c => c.includes(kw)))) {
-            headerRowIdx = i;
-            break;
-          }
-        }
-
-        const headers  = allRows[headerRowIdx].map(c => String(c).toLowerCase().trim());
-        const dataRows = allRows.slice(headerRowIdx + 1).filter(r => r.some(c => c !== '' && c != null));
-
-        if (!dataRows.length) {
-          toast.error('No data rows found after the header row');
-          setImporting(false);
-          return;
-        }
-
-        /* Map each data row to an object keyed by normalised header */
-        const toObj = (row) => {
-          const obj = {};
-          headers.forEach((h, i) => { if (h) obj[h] = String(row[i] ?? '').trim(); });
-          return obj;
-        };
-
-        /* Pick a value by trying multiple possible column name fragments */
-        const pick = (row, ...keys) => {
+        const LEAD_KW = ['name','contact','client','platform','status','source',
+                         'notes','remarks','manager','follow','date','business','company'];
+        const hasKW   = (cell) => LEAD_KW.some(kw => String(cell).toLowerCase().includes(kw));
+        const str     = (v)    => String(v ?? '').trim();
+        const pick    = (obj, ...keys) => {
           for (const k of keys) {
-            const match = Object.keys(row).find(h => h.includes(k));
-            if (match && row[match]) return row[match];
+            const hit = Object.keys(obj).find(h => h.includes(k));
+            if (hit && obj[hit]) return obj[hit];
           }
           return '';
         };
 
+        /* ── Detect structure ──────────────────────────────────── */
+        // Check if row 0 has section labels (non-empty, non-keyword cells like "PJ", "NS")
+        const row0 = allRows[0].map(str);
+        const sectionMarkers = row0.reduce((acc, cell, i) => {
+          if (cell && !hasKW(cell)) acc.push({ label: cell, col: i });
+          return acc;
+        }, []);
+
+        let sections   = [];   // [{ label, colStart, colEnd, headers[] }]
+        let dataStart  = 1;    // row index where data begins
+
+        if (sectionMarkers.length >= 2 && allRows.length > 1 && allRows[1].some(hasKW)) {
+          /* Multi-section layout: row 0 = section labels, row 1 = column headers */
+          const colHeaders = allRows[1].map(c => str(c).toLowerCase());
+          dataStart = 2;
+          sections = sectionMarkers.map((m, idx) => {
+            const colEnd = idx < sectionMarkers.length - 1
+              ? sectionMarkers[idx + 1].col
+              : colHeaders.length;
+            return { label: m.label, colStart: m.col, colEnd, headers: colHeaders.slice(m.col, colEnd) };
+          });
+        } else {
+          /* Single-section layout: find the first keyword row as header */
+          let headerIdx = 0;
+          for (let i = 0; i < Math.min(allRows.length, 15); i++) {
+            if (allRows[i].some(hasKW)) { headerIdx = i; break; }
+          }
+          const colHeaders = allRows[headerIdx].map(c => str(c).toLowerCase());
+          dataStart = headerIdx + 1;
+          sections = [{ label: '', colStart: 0, colEnd: colHeaders.length, headers: colHeaders }];
+        }
+
+        const dataRows = allRows.slice(dataStart).filter(r => r.some(c => str(c) !== ''));
+
+        if (!dataRows.length) { toast.error('No data rows found'); setImporting(false); return; }
+
+        /* ── Import one lead per section per row ───────────────── */
         let created = 0, skipped = 0;
         for (const rawRow of dataRows) {
-          const row  = toObj(rawRow);
-          const name = pick(row, 'name', 'contact name', 'contact', 'full name', 'lead name', 'client name');
-          if (!name) { skipped++; continue; }
-          const payload = {
-            name,
-            business_name:       pick(row, 'business name', 'business_name', 'company', 'firm', 'organisation', 'organization'),
-            platform:            pick(row, 'platform', 'source', 'channel', 'lead source'),
-            status:              pick(row, 'status', 'lead status') || 'New Lead',
-            lead_manager:        pick(row, 'lead manager', 'lead_manager', 'manager', 'assigned to', 'assignee'),
-            lead_generated_date: pick(row, 'lead generated date', 'lead_generated_date', 'generated date', 'generated on', 'date') || null,
-            last_followup_date:  pick(row, 'last follow-up', 'last_followup_date', 'follow up date', 'last contact', 'followup date') || null,
-            notes:               pick(row, 'notes', 'remarks', 'comments', 'description'),
-          };
-          try {
-            await axios.post(`${API}/leads`, payload, getAuthHeaders());
-            created++;
-          } catch (_err) { skipped++; }
+          for (const sec of sections) {
+            /* Map this section's columns into an object */
+            const obj = {};
+            sec.headers.forEach((h, i) => { if (h) obj[h] = str(rawRow[sec.colStart + i]); });
+
+            const name = pick(obj, 'name','contact name','contact','full name','lead name','client name');
+            if (!name) { skipped++; continue; }
+
+            const payload = {
+              name,
+              business_name:       pick(obj, 'business name','business_name','company','firm','organisation','organization'),
+              platform:            pick(obj, 'platform','source','channel','lead source'),
+              status:              pick(obj, 'status','lead status') || 'New Lead',
+              lead_manager:        pick(obj, 'lead manager','lead_manager','manager','assigned to','assignee') || sec.label || '',
+              lead_generated_date: pick(obj, 'lead generated date','lead_generated_date','generated date','generated on','date') || null,
+              last_followup_date:  pick(obj, 'last follow-up','last_followup_date','follow up date','last contact','followup date') || null,
+              notes:               pick(obj, 'notes','remarks','comments','description'),
+            };
+            try {
+              await axios.post(`${API}/leads`, payload, getAuthHeaders());
+              created++;
+            } catch (_err) { skipped++; }
+          }
         }
 
         toast.success(`Imported ${created} lead${created !== 1 ? 's' : ''}${skipped ? ` · ${skipped} skipped` : ''}`);
