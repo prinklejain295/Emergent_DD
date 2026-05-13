@@ -233,6 +233,9 @@ export default function LeadsPage() {
 
         const dataRows = allRows.slice(dataStart).filter(r => r.some(c => str(c) !== ''));
 
+        /* DEBUG — remove after confirming column names */
+        toast.info(`Sections: ${sections.length} | Headers: ${sections.map(s => `[${s.label}]: ${s.headers.filter(Boolean).join(', ')}`).join(' || ')}`, { duration: 20000 });
+
         if (!dataRows.length) { toast.error('No data rows found'); setImporting(false); return; }
 
         /* ── Import one lead per section per row ───────────────── */
