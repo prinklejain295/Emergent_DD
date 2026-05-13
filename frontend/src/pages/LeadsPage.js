@@ -88,8 +88,12 @@ export default function LeadsPage() {
   const [sortKey, setSortKey]         = useState('created_at');
   const [sortDir, setSortDir]         = useState('desc');
 
+  /* Pagination */
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+
   useEffect(() => { fetchLeads(); }, []);
-  useEffect(() => { setSelected(new Set()); }, [search, filterStatus, filterPlatform, sortKey, sortDir]);
+  useEffect(() => { setSelected(new Set()); setPage(1); }, [search, filterStatus, filterPlatform, sortKey, sortDir]);
 
   const fetchLeads = async () => {
     try {
@@ -345,6 +349,10 @@ export default function LeadsPage() {
       return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     });
 
+  const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const paginated  = displayed.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   /* Pipeline: group by status */
   const pipeline = STATUSES.map(s => ({
     ...s,
@@ -473,9 +481,9 @@ export default function LeadsPage() {
                 <tr style={{ background: '#111827' }}>
                   {/* Select-all checkbox */}
                   <th className="px-3 py-3.5 w-10">
-                    <button onClick={() => toggleSelectAll(displayed.map(l => l.Id))}
+                    <button onClick={() => toggleSelectAll(paginated.map(l => l.Id))}
                             className="text-white/70 hover:text-white transition-colors">
-                      {displayed.length > 0 && displayed.every(l => selected.has(l.Id))
+                      {paginated.length > 0 && paginated.every(l => selected.has(l.Id))
                         ? <CheckSquare size={16} />
                         : <Square size={16} />}
                     </button>
@@ -494,7 +502,7 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayed.map((lead, i) => {
+                {paginated.map((lead, i) => {
                   const plat = getPlatform(lead.platform);
                   const PlatIcon = plat.icon;
                   const st = getStatusStyle(lead.status);
@@ -592,8 +600,44 @@ export default function LeadsPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2.5 text-xs text-gray-500 border-t border-[#F3F4F6]" style={{ backgroundColor: '#F9FAFB' }}>
-            {displayed.length} of {leads.length} lead{leads.length !== 1 ? 's' : ''}
+          {/* Pagination bar */}
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-gray-500">
+              Showing <span className="font-semibold text-gray-700">{(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, displayed.length)}</span> of <span className="font-semibold text-gray-700">{displayed.length}</span> lead{displayed.length !== 1 ? 's' : ''}
+            </span>
+            <div className="flex items-center gap-1">
+              {/* Prev */}
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                ← Prev
+              </button>
+
+              {/* Page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce((acc, p, idx, arr) => {
+                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) => p === '...'
+                  ? <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-gray-400">…</span>
+                  : <button key={p} onClick={() => setPage(p)}
+                            className={`w-8 h-7 text-xs font-semibold rounded-lg transition-colors ${
+                              p === safePage
+                                ? 'bg-gray-900 text-white'
+                                : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-100'
+                            }`}>
+                      {p}
+                    </button>
+                )}
+
+              {/* Next */}
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                Next →
+              </button>
+            </div>
           </div>
         </div>
 
