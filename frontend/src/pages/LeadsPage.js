@@ -3,10 +3,10 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import {
-  Plus, Edit2, Trash2, Search, X, LayoutGrid, List,
+  Plus, Edit2, Trash2, Search, X,
   Linkedin, Mail, Globe, Phone, Star, ChevronDown,
   Calendar, Building2, User, ArrowUpDown, ChevronUp, Upload,
-  CheckSquare, Square, RefreshCw,
+  CheckSquare, Square,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -59,6 +59,8 @@ const EMPTY = {
   lead_manager: '', notes: '',
 };
 
+const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'', dateFrom:'', dateTo:'' };
+
 const GRADIENTS = [
   'linear-gradient(135deg,#7C3AED,#A855F7)',
   'linear-gradient(135deg,#3B82F6,#6366F1)',
@@ -85,22 +87,25 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('');
 
   /* Column-level filters */
-  const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'', dateFrom:'', dateTo:'' };
-  const [cf, setCf]   = useState(EMPTY_CF);
-  const setCol        = (k, v) => { setCf(p => ({ ...p, [k]: v })); setPage(1); };
-  const clearFilters  = () => { setCf(EMPTY_CF); setSearch(''); setPage(1); };
-  const anyFilter     = search || Object.entries(cf).some(([k, v]) => v !== '' && v !== 'all');
+  const [cf, setCf] = useState(EMPTY_CF);
 
   /* Sort */
   const [sortKey, setSortKey] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
 
-  /* Pagination */
+  /* Pagination — defined before helper fns that reference setPage */
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
 
+  /* Helpers defined after all state so no use-before-define */
+  const setCol       = (k, v) => { setCf(prev => ({ ...prev, [k]: v })); setPage(1); };
+  const clearFilters = () => { setCf(EMPTY_CF); setSearch(''); setPage(1); };
+  const anyFilter    = search || Object.entries(cf).some(([, v]) => v !== '' && v !== 'all');
+
   useEffect(() => { fetchLeads(); }, []);
-  useEffect(() => { setSelected(new Set()); setPage(1); }, [search, cf, sortKey, sortDir]);
+  const cfKey = JSON.stringify(cf);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSelected(new Set()); setPage(1); }, [search, cfKey, sortKey, sortDir]);
 
   const fetchLeads = async () => {
     try {
