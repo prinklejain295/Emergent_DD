@@ -17,6 +17,7 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 /* ── Constants ───────────────────────────────────────────────────── */
 const PLATFORMS = [
   { value: 'LinkedIn',  icon: Linkedin, color: '#0A66C2', bg: '#E8F0F9' },
+  { value: 'Instagram', icon: Star,     color: '#E1306C', bg: '#FDE8F0' },
   { value: 'Google',    icon: Globe,    color: '#EA4335', bg: '#FDE8E6' },
   { value: 'Yelp',      icon: Star,     color: '#D32323', bg: '#FDEAEA' },
   { value: 'Email',     icon: Mail,     color: '#7C3AED', bg: '#F3F4F6' },
@@ -59,7 +60,7 @@ const EMPTY = {
   lead_manager: '', notes: '',
 };
 
-const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'all', genFrom:'', genTo:'', dateFrom:'', dateTo:'' };
+const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'all' };
 
 const GRADIENTS = [
   'linear-gradient(135deg,#7C3AED,#A855F7)',
@@ -356,13 +357,9 @@ export default function LeadsPage() {
       if (q && !(l.name||'').toLowerCase().includes(q) && !(l.business_name||'').toLowerCase().includes(q) && !(l.lead_manager||'').toLowerCase().includes(q)) return false;
       if (cf.name     && !(l.name          ||'').toLowerCase().includes(cf.name.toLowerCase()))    return false;
       if (cf.business && !(l.business_name ||'').toLowerCase().includes(cf.business.toLowerCase())) return false;
-      if (cf.platform !== 'all' && l.platform    !== cf.platform) return false;
-      if (cf.status   !== 'all' && l.status      !== cf.status)   return false;
+      if (cf.platform !== 'all' && l.platform        !== cf.platform) return false;
+      if (cf.status   !== 'all' && l.status          !== cf.status)   return false;
       if (cf.manager  !== 'all' && (l.lead_manager||'') !== cf.manager) return false;
-      if (cf.genFrom  && (l.lead_generated_date  || '') < cf.genFrom) return false;
-      if (cf.genTo    && (l.lead_generated_date  || '') > cf.genTo)   return false;
-      if (cf.dateFrom && (l.last_followup_date   || '') < cf.dateFrom) return false;
-      if (cf.dateTo   && (l.last_followup_date   || '') > cf.dateTo)   return false;
       return true;
     })
     .sort((a, b) => {
@@ -549,28 +546,10 @@ export default function LeadsPage() {
                       {STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                     </select>
                   </td>
-                  {/* Generated — date range */}
-                  <td className="px-2 py-2">
-                    <div className="flex gap-1">
-                      <input type="date" value={cf.genFrom} onChange={e => setCol('genFrom', e.target.value)}
-                             title="Generated from"
-                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
-                      <input type="date" value={cf.genTo} onChange={e => setCol('genTo', e.target.value)}
-                             title="Generated to"
-                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
-                    </div>
-                  </td>
-                  {/* Last Follow-up — date range */}
-                  <td className="px-2 py-2">
-                    <div className="flex gap-1">
-                      <input type="date" value={cf.dateFrom} onChange={e => setCol('dateFrom', e.target.value)}
-                             title="Follow-up from"
-                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
-                      <input type="date" value={cf.dateTo} onChange={e => setCol('dateTo', e.target.value)}
-                             title="Follow-up to"
-                             className="w-full text-xs border border-gray-300 rounded-lg px-1.5 py-1.5 focus:outline-none focus:border-gray-500" />
-                    </div>
-                  </td>
+                  {/* Generated — sort only, no filter */}
+                  <td className="px-2 py-2" />
+                  {/* Last Follow-up — sort only, no filter */}
+                  <td className="px-2 py-2" />
                   {/* Manager — dynamic dropdown */}
                   <td className="px-2 py-2">
                     <select value={cf.manager} onChange={e => setCol('manager', e.target.value)}
