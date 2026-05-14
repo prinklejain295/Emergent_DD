@@ -130,8 +130,12 @@ const ColFilter = ({ value, onChange, placeholder, type = 'text', options }) =>
 
 /* ═══════════════════════════════════════════════════════════════════ */
 export default function ClientsPage() {
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRole    = currentUser.role || 'consultant';
+
   const [clients, setClients]     = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [permissions, setPermissions] = useState(null);
   const [viewMode, setViewMode]   = useState('board');
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
@@ -152,12 +156,21 @@ export default function ClientsPage() {
   const [cf, setCf] = useState({ name: '', type: 'all', company: '', email: '', tags: 'all' });
   const setColFilter = (key, val) => setCf(f => ({ ...f, [key]: val }));
 
-  useEffect(() => { fetchClients(); }, []);
+  useEffect(() => {
+    fetchClients();
+    axios.get(`${API}/permissions`, getAuthHeaders())
+      .then(r => setPermissions(r.data))
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     const h = (e) => { if (tagMenuRef.current && !tagMenuRef.current.contains(e.target)) setShowTagMenu(false); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
+
+  const canAdd    = userRole === 'admin' || !!permissions?.add_client?.[userRole];
+  const canEdit   = userRole === 'admin' || !!permissions?.edit_client?.[userRole];
+  const canDelete = userRole === 'admin' || !!permissions?.delete_client?.[userRole];
 
   const fetchClients = async () => {
     try {
@@ -286,9 +299,11 @@ export default function ClientsPage() {
           <h1 className="page-title">Clients</h1>
           <p className="page-description">{clients.length} client{clients.length !== 1 ? 's' : ''} in your organisation</p>
         </div>
-        <button onClick={openAdd} data-testid="add-client-button" className="btn-primary flex items-center gap-2 self-start sm:self-auto">
-          <Plus size={18} /> Add Client
-        </button>
+        {canAdd && (
+          <button onClick={openAdd} data-testid="add-client-button" className="btn-primary flex items-center gap-2 self-start sm:self-auto">
+            <Plus size={18} /> Add Client
+          </button>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -338,7 +353,7 @@ export default function ClientsPage() {
           </div>
           <h3 className="text-xl font-semibold text-[#374151] mb-2">No clients found</h3>
           <p className="text-gray-500 mb-6">{search || filterType !== 'all' || filterTag !== 'all' ? 'Try adjusting filters' : 'Add your first client to get started'}</p>
-          {!search && filterType === 'all' && filterTag === 'all' && <button onClick={openAdd} className="btn-primary">Add First Client</button>}
+          {!search && filterType === 'all' && filterTag === 'all' && canAdd && <button onClick={openAdd} className="btn-primary">Add First Client</button>}
         </div>
 
       ) : viewMode === 'board' ? ((() => {
@@ -368,10 +383,12 @@ export default function ClientsPage() {
               {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-gray-500 flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
             </div>
             {c.tags && <div className="mb-4"><TagPills tags={c.tags} /></div>}
-            <div className="flex gap-2 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => openEdit(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>
-              <button onClick={() => handleDelete(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={12} /> Delete</button>
-            </div>
+            {(canEdit || canDelete) && (
+              <div className="flex gap-2 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                {canEdit   && <button onClick={() => openEdit(c)}   className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={12} /> Edit</button>}
+                {canDelete && <button onClick={() => handleDelete(c)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={12} /> Delete</button>}
+              </div>
+            )}
           </div>
         );
 
@@ -495,10 +512,12 @@ export default function ClientsPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{c.phone ? `${c.phone_code || ''} ${c.phone}` : '—'}</td>
                     <td className="px-4 py-3 max-w-[200px]"><TagPills tags={c.tags} /></td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-gray-50 rounded-lg"><Edit2 size={14} className="text-gray-500" /></button>
-                        <button onClick={() => handleDelete(c)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-500" /></button>
-                      </div>
+                      {(canEdit || canDelete) && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canEdit   && <button onClick={() => openEdit(c)}   className="p-1.5 hover:bg-gray-50 rounded-lg"><Edit2 size={14} className="text-gray-500" /></button>}
+                          {canDelete && <button onClick={() => handleDelete(c)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-500" /></button>}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

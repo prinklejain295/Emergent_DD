@@ -41,6 +41,15 @@ DEFAULT_SERVICE_TYPES = {
     'other': ['Other Compliance']
 }
 
+DEFAULT_PERMISSIONS = {
+    "add_client":     {"manager": True,  "consultant": False},
+    "edit_client":    {"manager": True,  "consultant": False},
+    "delete_client":  {"manager": False, "consultant": False},
+    "add_service":    {"manager": True,  "consultant": False},
+    "edit_service":   {"manager": True,  "consultant": False},
+    "manage_leads":   {"manager": True,  "consultant": True},
+}
+
 def get_headers():
     return {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
@@ -847,3 +856,52 @@ def resolve_error(error_id):
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_ERRORS}/records",
              {"Id": error_id, "resolved": True})
     return jsonify({"message": f"ERR-{error_id} marked as resolved"})
+
+# ── Permissions ───────────────────────────────────────────────────────────────
+
+@app.route('/api/permissions', methods=['GET'])
+def get_permissions():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    try:
+        org_id = user.get('organization_id', '')
+        result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_ORGANIZATIONS}/records",
+                        params={"where": f"(id,eq,{org_id})", "limit": 1})
+        org_list = (result.get('list') or []) if result else []
+        if org_list and org_list[0].get('permissions'):
+            try:
+                saved = json.loads(org_list[0]['permissions'])
+                merged = {}
+                for k, defaults in DEFAULT_PERMISSIONS.items():
+                    merged[k] = {**defaults, **saved.get(k, {})}
+                return jsonify(merged)
+            except Exception:
+                pass
+        return jsonify(DEFAULT_PERMISSIONS)
+    except Exception as e:
+        print(f"get_permissions error: {e}")
+        return jsonify(DEFAULT_PERMISSIONS)
+
+@app.route('/api/permissions', methods=['PUT'])
+def update_permissions():
+    user, error, code = get_token()
+    if error:
+        return error, code
+    deny = _require_admin(user)
+    if deny:
+        return deny
+    data = request.get_json(force=True) or {}
+    try:
+        org_id = user.get('organization_id', '')
+        result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_ORGANIZATIONS}/records",
+                        params={"where": f"(id,eq,{org_id})", "limit": 1})
+        org_list = (result.get('list') or []) if result else []
+        if not org_list:
+            return jsonify({"error": "Organization not found"}), 404
+        nc_patch(f"/api/v2/tables/{NOCODB_TABLE_ORGANIZATIONS}/records",
+                 {"Id": org_list[0].get('Id'), "permissions": json.dumps(data)})
+        return jsonify({"message": "Permissions saved"})
+    except Exception as e:
+        print(f"update_permissions error: {e}")
+        return jsonify({"error": str(e)}), 500

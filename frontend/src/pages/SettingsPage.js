@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   Users, Shield, Plus, Edit2, Trash2, X, Eye, EyeOff,
   Key, ChevronDown, CheckCircle, AlertCircle, Crown,
-  Briefcase, UserCheck,
+  Briefcase, UserCheck, Save, UserPlus, Target, Lock,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -20,6 +20,37 @@ const ROLES = [
 ];
 
 const getRoleConfig = (r) => ROLES.find(x => x.value === r) || ROLES[2];
+
+/* ── Permissions config ──────────────────────────────────────────── */
+const PERMISSIONS_CONFIG = [
+  { key: 'add_client',    label: 'Add Clients',    icon: UserPlus },
+  { key: 'edit_client',   label: 'Edit Clients',   icon: Edit2    },
+  { key: 'delete_client', label: 'Delete Clients', icon: Trash2   },
+  { key: 'add_service',   label: 'Add Services',   icon: Plus     },
+  { key: 'edit_service',  label: 'Edit Services',  icon: Edit2    },
+  { key: 'manage_leads',  label: 'Manage Leads',   icon: Target   },
+];
+
+const DEFAULT_PERMS = {
+  add_client:     { manager: true,  consultant: false },
+  edit_client:    { manager: true,  consultant: false },
+  delete_client:  { manager: false, consultant: false },
+  add_service:    { manager: true,  consultant: false },
+  edit_service:   { manager: true,  consultant: false },
+  manage_leads:   { manager: true,  consultant: true  },
+};
+
+/* ── Toggle switch component ─────────────────────────────────────── */
+const Toggle = ({ on, disabled, onChange }) => (
+  <button type="button" disabled={disabled} onClick={onChange}
+          className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
+            disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          } ${on ? 'bg-gray-900' : 'bg-gray-300'}`}>
+    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+      on ? 'translate-x-[18px]' : 'translate-x-0.5'
+    }`} />
+  </button>
+);
 
 const GRADIENTS = [
   '#7C3AED',
@@ -67,20 +98,29 @@ export default function SettingsPage() {
   const [showNewPwd, setShowNewPwd]   = useState(false);
 
   /* Access control state: { memberId: [clientId, ...] } */
-  const [accessMap, setAccessMap]     = useState({});
+  const [accessMap, setAccessMap]       = useState({});
   const [accessSaving, setAccessSaving] = useState({});
+
+  /* Permissions board state */
+  const [permissions, setPermissions]   = useState(DEFAULT_PERMS);
+  const [permSaving, setPermSaving]     = useState(false);
+
+  /* Selected consultant in Access Control tab */
+  const [selectedConsultantId, setSelectedConsultantId] = useState('');
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
-      const [teamRes, clientRes] = await Promise.all([
+      const [teamRes, clientRes, permRes] = await Promise.all([
         axios.get(`${API}/team`, getAuthHeaders()),
         axios.get(`${API}/clients`, getAuthHeaders()),
+        axios.get(`${API}/permissions`, getAuthHeaders()),
       ]);
       const teamData = Array.isArray(teamRes.data) ? teamRes.data : [];
       setMembers(teamData);
       setClients(Array.isArray(clientRes.data) ? clientRes.data : []);
+      setPermissions(permRes.data || DEFAULT_PERMS);
 
       // Build initial access map for consultants
       const map = {};
@@ -179,6 +219,24 @@ export default function SettingsPage() {
     } finally {
       setAccessSaving(prev => ({ ...prev, [member.Id]: false }));
     }
+  };
+
+  /* ── Permissions board ──────────────────────────────────────────── */
+  const togglePermission = (key, role) => {
+    setPermissions(prev => ({
+      ...prev,
+      [key]: { ...prev[key], [role]: !prev[key]?.[role] },
+    }));
+  };
+
+  const handleSavePermissions = async () => {
+    setPermSaving(true);
+    try {
+      await axios.put(`${API}/permissions`, permissions, getAuthHeaders());
+      toast.success('Permissions saved');
+    } catch (err) {
+      toast.error(await toastMsg('SettingsPage.permissions', err, 'Failed to save permissions'));
+    } finally { setPermSaving(false); }
   };
 
   const consultants = members.filter(m => m.role === 'consultant');
@@ -312,18 +370,6 @@ export default function SettingsPage() {
       {/* ── ACCESS CONTROL TAB ──────────────────────────────────── */}
       {tab === 'access' && (
         <div className="space-y-6">
-          {/* Info */}
-          <div className="card p-5 flex gap-4 bg-gray-50 border-gray-200">
-            <Shield size={20} className="text-gray-700 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-gray-900 mb-1">How access control works</p>
-              <p className="text-sm text-gray-800 leading-relaxed">
-                Admins and Managers see all data. Consultants only see the clients assigned to them —
-                their services, calendar entries and leads are filtered automatically.
-                After changing access, the consultant must <strong>log out and log back in</strong> for changes to take effect.
-              </p>
-            </div>
-          </div>
 
           {!isAdmin && (
             <div className="card p-5 text-center text-gray-500">
@@ -332,67 +378,182 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {isAdmin && consultants.length === 0 && (
-            <div className="card p-10 text-center text-gray-400">
-              <UserCheck size={36} className="mx-auto mb-2 text-gray-200" />
-              <p>No consultants in your team yet.</p>
-              <p className="text-sm mt-1">Add a team member with the Consultant role first.</p>
+          {/* ── Section 1: Permissions Board ─────────────────────── */}
+          {isAdmin && (
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-bold text-gray-900">Role Permissions</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Control what each role can do across the portal</p>
+                </div>
+                <button onClick={handleSavePermissions} disabled={permSaving}
+                        className="btn-primary text-sm py-2 px-4 flex items-center gap-2">
+                  {permSaving ? '…' : <><Save size={13} /> Save Changes</>}
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-gray-100">
+                      <th className="text-left pb-3 pr-6 font-semibold text-gray-600 w-1/2">Permission</th>
+                      <th className="text-center pb-3 px-6 font-semibold text-gray-600">
+                        <span className="flex items-center gap-1.5 justify-center">
+                          <Crown size={12} /> Admin
+                        </span>
+                      </th>
+                      <th className="text-center pb-3 px-6 font-semibold text-gray-600">
+                        <span className="flex items-center gap-1.5 justify-center">
+                          <Briefcase size={12} /> Manager
+                        </span>
+                      </th>
+                      <th className="text-center pb-3 px-6 font-semibold text-gray-600">
+                        <span className="flex items-center gap-1.5 justify-center">
+                          <UserCheck size={12} /> Consultant
+                        </span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {PERMISSIONS_CONFIG.map(({ key, label, icon: PIcon }) => (
+                      <tr key={key} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="py-3.5 pr-6">
+                          <span className="flex items-center gap-2 text-gray-800 font-medium">
+                            <PIcon size={13} className="text-gray-400 flex-shrink-0" /> {label}
+                          </span>
+                        </td>
+                        {/* Admin — always on, locked */}
+                        <td className="text-center py-3.5 px-6">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-900 mx-auto">
+                            <Lock size={9} className="text-white" />
+                          </span>
+                        </td>
+                        {/* Manager toggle */}
+                        <td className="text-center py-3.5 px-6">
+                          <div className="flex justify-center">
+                            <Toggle
+                              on={!!permissions?.[key]?.manager}
+                              disabled={false}
+                              onChange={() => togglePermission(key, 'manager')}
+                            />
+                          </div>
+                        </td>
+                        {/* Consultant toggle */}
+                        <td className="text-center py-3.5 px-6">
+                          <div className="flex justify-center">
+                            <Toggle
+                              on={!!permissions?.[key]?.consultant}
+                              disabled={false}
+                              onChange={() => togglePermission(key, 'consultant')}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {isAdmin && consultants.map((m, i) => {
-            const assigned = accessMap[m.Id] || [];
-            return (
-              <div key={m.Id || i} className="card p-5">
-                {/* Consultant header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
-                       style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
-                    {initials(m.name)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900">{m.name}</p>
-                    <p className="text-xs text-gray-500">{m.email} · Consultant</p>
-                  </div>
-                  <span className="text-xs text-gray-400 mr-2">
-                    {assigned.length}/{clients.length} clients
-                  </span>
-                  <button onClick={() => saveAccess(m)} disabled={accessSaving[m.Id]}
-                          className="btn-primary text-sm py-2 px-4 flex items-center gap-2">
-                    {accessSaving[m.Id] ? '...' : <><CheckCircle size={14} /> Save</>}
-                  </button>
-                </div>
-
-                {/* Client checkboxes */}
-                {clients.length === 0 ? (
-                  <p className="text-sm text-gray-400">No clients yet — add clients first.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {clients.map(c => {
-                      const isOn = assigned.includes(String(c.Id));
-                      return (
-                        <button key={c.Id} type="button"
-                                onClick={() => toggleClientAccess(m.Id, String(c.Id))}
-                                className={`flex items-center gap-2.5 p-2.5 rounded-xl border-2 text-left transition-all text-sm ${
-                                  isOn ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-500 bg-white'
-                                }`}>
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                            isOn ? 'bg-gray-900 border-gray-900' : 'border-gray-300'
-                          }`}>
-                            {isOn && <span className="text-white text-xs leading-none">✓</span>}
-                          </div>
-                          <div className="min-w-0">
-                            <p className={`font-medium truncate ${isOn ? 'text-gray-900' : 'text-gray-700'}`}>{c.name}</p>
-                            {c.company && <p className="text-xs text-gray-400 truncate">{c.company}</p>}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+          {/* ── Section 2: Client Assignment ─────────────────────── */}
+          {isAdmin && (
+            <div className="card p-5">
+              <div className="mb-5">
+                <h3 className="font-bold text-gray-900">Client Assignment</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Consultants only see assigned clients. After saving, they must log out and back in.
+                </p>
               </div>
-            );
-          })}
+
+              {consultants.length === 0 ? (
+                <div className="py-8 text-center text-gray-400">
+                  <UserCheck size={32} className="mx-auto mb-2 text-gray-200" />
+                  <p className="text-sm">No consultants yet — add a team member with the Consultant role first.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Consultant dropdown */}
+                  <div className="mb-5">
+                    <label className="label">Select Team Member</label>
+                    <div className="relative">
+                      <select
+                        value={selectedConsultantId}
+                        onChange={e => setSelectedConsultantId(e.target.value)}
+                        className="input-field appearance-none pr-10"
+                      >
+                        <option value="">— Choose a consultant —</option>
+                        {consultants.map((m, i) => (
+                          <option key={m.Id} value={String(m.Id)}>
+                            {m.name}  ·  {getRoleConfig(m.role).label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Client grid for selected consultant */}
+                  {selectedConsultantId && (() => {
+                    const m = consultants.find(c => String(c.Id) === selectedConsultantId);
+                    if (!m) return null;
+                    const idx = consultants.indexOf(m);
+                    const assigned = accessMap[m.Id] || [];
+                    return (
+                      <div>
+                        {/* Consultant header row */}
+                        <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                               style={{ background: GRADIENTS[idx % GRADIENTS.length] }}>
+                            {initials(m.name)}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 text-sm">{m.name}</p>
+                            <p className="text-xs text-gray-500">{m.email}</p>
+                          </div>
+                          <span className="text-xs text-gray-400 mr-1">
+                            {assigned.length} / {clients.length} clients
+                          </span>
+                          <button onClick={() => saveAccess(m)} disabled={accessSaving[m.Id]}
+                                  className="btn-primary text-sm py-2 px-4 flex items-center gap-2">
+                            {accessSaving[m.Id] ? '…' : <><CheckCircle size={13} /> Save</>}
+                          </button>
+                        </div>
+
+                        {/* Client checkboxes */}
+                        {clients.length === 0 ? (
+                          <p className="text-sm text-gray-400">No clients yet — add clients first.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {clients.map(c => {
+                              const isOn = assigned.includes(String(c.Id));
+                              return (
+                                <button key={c.Id} type="button"
+                                        onClick={() => toggleClientAccess(m.Id, String(c.Id))}
+                                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border-2 text-left transition-all text-sm ${
+                                          isOn ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-500 bg-white'
+                                        }`}>
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                    isOn ? 'bg-gray-900 border-gray-900' : 'border-gray-300'
+                                  }`}>
+                                    {isOn && <span className="text-white text-xs leading-none">✓</span>}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className={`font-medium truncate ${isOn ? 'text-gray-900' : 'text-gray-700'}`}>{c.name}</p>
+                                    {c.company && <p className="text-xs text-gray-400 truncate">{c.company}</p>}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
