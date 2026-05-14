@@ -24,8 +24,8 @@ const STATUS_STYLE = {
 };
 
 const EVENT_STYLE = {
-  internal:   { bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000', label: 'Internal' },
-  regulatory: { bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF', label: 'Regulatory' },
+  internal:   { bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A', dot: '#F59E0B', label: 'Internal' },
+  regulatory: { bg: '#EDE9FE', text: '#5B21B6', border: '#DDD6FE', dot: '#7C3AED', label: 'Regulatory' },
 };
 
 export default function CalendarPage() {
@@ -163,7 +163,7 @@ export default function CalendarPage() {
                 className={[
                   'min-h-[72px] p-1 rounded-lg border transition-all select-none',
                   !inMonth   ? 'bg-gray-50 opacity-35'  : 'bg-white',
-                  todayFlag  ? 'border-gray-900 border-2' : 'border-[#F3F4F6]',
+                  todayFlag  ? 'border-violet-500 border-2' : 'border-[#F3F4F6]',
                   hasEvts    ? 'cursor-pointer hover:border-[#374151] hover:shadow-md' : '',
                 ].join(' ')}
               >
@@ -171,7 +171,7 @@ export default function CalendarPage() {
                 <div className="flex justify-center mb-0.5">
                   <span className={[
                     'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                    todayFlag ? 'bg-gray-900 text-white' : 'text-gray-600',
+                    todayFlag ? 'bg-violet-600 text-white' : 'text-gray-600',
                   ].join(' ')}>
                     {format(day, 'd')}
                   </span>

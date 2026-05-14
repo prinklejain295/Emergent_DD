@@ -20,30 +20,30 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 
 /* ── Color palettes ───────────────────────────────────────────── */
 const STATUS_COLORS = {
-  'Done':         '#000000',
-  'In Progress':  '#444444',
-  'Under Review': '#666666',
-  'Pending':      '#888888',
-  'Washington':   '#000000',
-  'Urgent':       '#000000',
-  'On Hold':      '#AAAAAA',
-  'Not Started':  '#CCCCCC',
+  'Done':         '#10B981',
+  'In Progress':  '#3B82F6',
+  'Under Review': '#8B5CF6',
+  'Pending':      '#F59E0B',
+  'Washington':   '#EF4444',
+  'Urgent':       '#EF4444',
+  'On Hold':      '#6B7280',
+  'Not Started':  '#D1D5DB',
 };
 
 const FEES_COLORS = {
-  'Post Payment':     '#000000',
-  'Pre Payment':      '#444444',
-  'Pending Payment':  '#222222',
-  'Invoiced':         '#666666',
-  'Waived':           '#AAAAAA',
-  'On Hold':          '#CCCCCC',
+  'Post Payment':     '#10B981',
+  'Pre Payment':      '#F59E0B',
+  'Pending Payment':  '#EF4444',
+  'Invoiced':         '#3B82F6',
+  'Waived':           '#8B5CF6',
+  'On Hold':          '#6B7280',
 };
 
 const STAT_GRADIENTS = [
-  { from: '#000000', to: '#000000' },
-  { from: '#000000', to: '#000000' },
-  { from: '#000000', to: '#000000' },
-  { from: '#000000', to: '#000000' },
+  { from: '#3B82F6', to: '#3B82F6' },
+  { from: '#F59E0B', to: '#F59E0B' },
+  { from: '#8B5CF6', to: '#8B5CF6' },
+  { from: '#EF4444', to: '#EF4444' },
 ];
 
 /* ── Custom Tooltip ───────────────────────────────────────────── */
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
       {/* ── Welcome Banner ──────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl p-7 text-white"
-           style={{ background: '#000000' }}>
+           style={{ background: '#1E293B' }}>
         {/* Decorative shapes */}
         <svg className="absolute right-0 top-0 opacity-10" width="240" height="160" viewBox="0 0 240 160" fill="none">
           <circle cx="200" cy="-20" r="100" stroke="white" strokeWidth="2" />
@@ -257,9 +257,9 @@ export default function Dashboard() {
       {/* ── List Modal (Pending / Unbilled / Overdue) ────────────── */}
       {showList && (() => {
         const cfg = {
-          pending:  { title: 'Pending Tasks',  list: stats.pendingList,  color: '#000000', badge: (s) => s.status || 'Pending' },
-          unbilled: { title: 'Unbilled Work',  list: stats.unbilledList, color: '#000000', badge: (s) => s.fees_status || 'Unpaid' },
-          overdue:  { title: 'Overdue Items',  list: stats.overdueList,  color: '#000000', badge: (s) => s.regulatory_due_date ? new Date(s.regulatory_due_date).toLocaleDateString('en-GB') : '—' },
+          pending:  { title: 'Pending Tasks',  list: stats.pendingList,  color: '#F59E0B', badge: (s) => s.status || 'Pending' },
+          unbilled: { title: 'Unbilled Work',  list: stats.unbilledList, color: '#3B82F6', badge: (s) => s.fees_status || 'Unpaid' },
+          overdue:  { title: 'Overdue Items',  list: stats.overdueList,  color: '#EF4444', badge: (s) => s.regulatory_due_date ? new Date(s.regulatory_due_date).toLocaleDateString('en-GB') : '—' },
         }[showList];
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
@@ -279,8 +279,8 @@ export default function Dashboard() {
               <div className="overflow-y-auto flex-1 p-3 space-y-2">
                 {cfg.list.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                    <CheckCircle2 size={36} className="text-gray-400 mb-2" />
-                    <p className="font-medium text-gray-500">Nothing here!</p>
+                    <CheckCircle2 size={36} className="text-green-400 mb-2" />
+                    <p className="font-medium text-green-600">Nothing here!</p>
                   </div>
                 ) : cfg.list.map((s, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
@@ -314,8 +314,8 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.04]"
                style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
-              <Clock size={18} className="text-gray-700" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-100">
+              <Clock size={18} className="text-amber-600" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">Pending Tasks</h2>
@@ -325,8 +325,8 @@ export default function Dashboard() {
 
           {pendingByStatus.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-44 text-gray-400">
-              <CheckCircle2 size={40} className="text-gray-400 mb-2" />
-              <p className="font-medium text-gray-500">All tasks completed!</p>
+              <CheckCircle2 size={40} className="text-green-400 mb-2" />
+              <p className="font-medium text-green-600">All tasks completed!</p>
             </div>
           ) : (
             <div className="flex items-center gap-4">
@@ -359,8 +359,8 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.04]"
                style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
-              <Banknote size={18} className="text-gray-700" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-100">
+              <Banknote size={18} className="text-blue-600" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">Billing Pipeline</h2>
@@ -412,21 +412,21 @@ export default function Dashboard() {
             <AreaChart data={monthlyDeadlines} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradInternal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#000000" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#000000" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#6366F1" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradRegulatory" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#555555" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#555555" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#F59E0B" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis  tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Area type="monotone" dataKey="Internal"   stroke="#000000" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#000000' }} />
-              <Area type="monotone" dataKey="Regulatory" stroke="#555555" strokeWidth={2.5} fill="url(#gradRegulatory)" dot={{ r: 4, fill: '#555555' }} />
+              <Area type="monotone" dataKey="Internal"   stroke="#6366F1" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#6366F1' }} />
+              <Area type="monotone" dataKey="Regulatory" stroke="#F59E0B" strokeWidth={2.5} fill="url(#gradRegulatory)" dot={{ r: 4, fill: '#F59E0B' }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

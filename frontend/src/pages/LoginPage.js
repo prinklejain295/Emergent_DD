@@ -36,7 +36,7 @@ export default function LoginPage({ onLogin }) {
     <div className="min-h-screen flex animate-fade-in">
       {/* Left side - Brand */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12 relative overflow-hidden"
-           style={{ background: '#000000' }}>
+           style={{ background: '#4F46E5' }}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10"
              style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
@@ -63,7 +63,7 @@ export default function LoginPage({ onLogin }) {
         <div className="text-white max-w-lg z-10 animate-slide-in">
           <div className="mb-8">
             <div className="w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-white text-3xl font-bold shadow-2xl"
-                 style={{ background: '#000000' }}>
+                 style={{ background: '#4F46E5' }}>
               D
             </div>
           </div>

@@ -22,7 +22,7 @@ export default function Layout({ children, user, organization, onLogout }) {
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center space-x-3 mb-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
-               style={{ background: '#000000' }}>
+               style={{ background: '#0F172A' }}>
             D
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">DueDate</h1>
@@ -86,7 +86,7 @@ export default function Layout({ children, user, organization, onLogout }) {
 
       {/* ── Desktop Sidebar ──────────────────────────────────────── */}
       <aside className="hidden md:flex w-64 fixed left-0 top-0 h-screen flex-col z-40 animate-slide-in"
-             style={{ background: '#000000' }}>
+             style={{ background: '#0F172A' }}>
         <SidebarContent onLinkClick={undefined} />
       </aside>
 
@@ -95,7 +95,7 @@ export default function Layout({ children, user, organization, onLogout }) {
            style={{ background: '#000000' }}>
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-lg font-bold"
-               style={{ background: '#000000' }}>
+               style={{ background: '#0F172A' }}>
             D
           </div>
           <h1 className="text-xl font-bold text-white">DueDate</h1>

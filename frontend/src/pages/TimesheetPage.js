@@ -39,8 +39,8 @@ const EMPTY_FORM = {
 
 /* ── Gradient palette for summary bars ─────────────────────── */
 const BAR_COLORS = [
-  '#000000','#222222','#444444','#666666','#000000',
-  '#222222','#444444','#000000','#333333','#555555',
+  '#6366F1','#F59E0B','#10B981','#EF4444','#3B82F6',
+  '#EC4899','#8B5CF6','#F97316','#14B8A6','#84CC16',
 ];
 
 export default function TimesheetPage() {
@@ -215,10 +215,10 @@ export default function TimesheetPage() {
       {/* ── Summary cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Entries',     value: entries.length,                    icon: List,      color: '#000000' },
-          { label: 'Total Hours',       value: fmtMins(entries.reduce((s,e) => s+(parseInt(e.minutes)||0),0)), icon: Timer, color: '#000000' },
-          { label: 'Clients Served',    value: new Set(entries.map(e=>e.client_name)).size,  icon: Users,     color: '#000000' },
-          { label: 'Team Members',      value: new Set(entries.map(e=>e.user_name)).size,    icon: TrendingUp,color: '#000000' },
+          { label: 'Total Entries',     value: entries.length,                    icon: List,      color: '#6366F1' },
+          { label: 'Total Hours',       value: fmtMins(entries.reduce((s,e) => s+(parseInt(e.minutes)||0),0)), icon: Timer, color: '#F59E0B' },
+          { label: 'Clients Served',    value: new Set(entries.map(e=>e.client_name)).size,  icon: Users,     color: '#10B981' },
+          { label: 'Team Members',      value: new Set(entries.map(e=>e.user_name)).size,    icon: TrendingUp,color: '#EF4444' },
         ].map(({ label, value, icon: Icon, color }, i) => (
           <div key={i} className="card p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -277,7 +277,7 @@ export default function TimesheetPage() {
                       className="text-sm text-gray-500 hover:text-gray-800 underline">Clear</button>
             )}
             <span className="ml-auto text-sm font-semibold text-gray-700">
-              {filtered.length} entries · <span className="text-gray-900 font-bold">{fmtMins(totalMins)}</span>
+              {filtered.length} entries · <span className="text-indigo-600">{fmtMins(totalMins)}</span>
             </span>
           </div>
 
@@ -316,7 +316,7 @@ export default function TimesheetPage() {
                           <p className="truncate text-gray-600">{e.service_category || '—'}</p>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="font-bold text-gray-900">{fmtMins(e.minutes)}</span>
+                          <span className="font-bold text-indigo-600">{fmtMins(e.minutes)}</span>
                           <span className="text-xs text-gray-400 ml-1">({e.minutes}m)</span>
                         </td>
                         <td className="px-4 py-3 max-w-[160px]">

@@ -17,24 +17,24 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 /* ── Constants ───────────────────────────────────────────────────── */
 const PLATFORMS = [
   { value: 'LinkedIn',  icon: Linkedin, color: '#0A66C2', bg: '#E8F0F9' },
-  { value: 'Instagram', icon: Star,     color: '#374151', bg: '#F3F4F6' },
-  { value: 'Google',    icon: Globe,    color: '#374151', bg: '#F3F4F6' },
-  { value: 'Yelp',      icon: Star,     color: '#374151', bg: '#F3F4F6' },
-  { value: 'Email',     icon: Mail,     color: '#374151', bg: '#F3F4F6' },
-  { value: 'Referral',  icon: User,     color: '#374151', bg: '#F3F4F6' },
-  { value: 'Cold Call', icon: Phone,    color: '#374151', bg: '#F3F4F6' },
+  { value: 'Instagram', icon: Star,     color: '#E1306C', bg: '#FDE8F0' },
+  { value: 'Google',    icon: Globe,    color: '#EA4335', bg: '#FDE8E6' },
+  { value: 'Yelp',      icon: Star,     color: '#D32323', bg: '#FDEAEA' },
+  { value: 'Email',     icon: Mail,     color: '#7C3AED', bg: '#EDE9FE' },
+  { value: 'Referral',  icon: User,     color: '#059669', bg: '#D1FAE5' },
+  { value: 'Cold Call', icon: Phone,    color: '#D97706', bg: '#FEF3C7' },
   { value: 'Other',     icon: Globe,    color: '#6B7280', bg: '#F3F4F6' },
 ];
 
 const STATUSES = [
-  { label: 'New Lead',       bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
-  { label: 'Contacted',      bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
-  { label: 'In Discussion',  bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
-  { label: 'Proposal Sent',  bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
-  { label: 'Negotiating',    bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
-  { label: 'Converted',      bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
-  { label: 'Lost',           bg: '#FFFFFF', text: '#888888', border: '#CCCCCC', dot: '#CCCCCC' },
-  { label: 'On Hold',        bg: '#FFFFFF', text: '#555555', border: '#888888', dot: '#888888' },
+  { label: 'New Lead',       bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE', dot: '#3B82F6' },
+  { label: 'Contacted',      bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#6B7280' },
+  { label: 'In Discussion',  bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A', dot: '#F59E0B' },
+  { label: 'Proposal Sent',  bg: '#FFEDD5', text: '#9A3412', border: '#FED7AA', dot: '#F97316' },
+  { label: 'Negotiating',    bg: '#F3E8FF', text: '#6B21A8', border: '#E9D5FF', dot: '#A855F7' },
+  { label: 'Converted',      bg: '#DCFCE7', text: '#166534', border: '#BBF7D0', dot: '#10B981' },
+  { label: 'Lost',           bg: '#FEE2E2', text: '#991B1B', border: '#FECACA', dot: '#EF4444' },
+  { label: 'On Hold',        bg: '#F1F5F9', text: '#475569', border: '#E2E8F0', dot: '#94A3B8' },
 ];
 
 const getStatusStyle = (s) => STATUSES.find(o => o.label === s) || STATUSES[0];
@@ -63,12 +63,12 @@ const EMPTY = {
 const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'all' };
 
 const GRADIENTS = [
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
+  '#7C3AED',
+  '#3B82F6',
+  '#EC4899',
+  '#10B981',
+  '#F59E0B',
+  '#06B6D4',
 ];
 
 /* ── Component ────────────────────────────────────────────────────── */
@@ -578,12 +578,12 @@ export default function LeadsPage() {
 
                   return (
                     <tr key={lead.Id || i}
-                        className={`group border-b border-gray-100 transition-colors ${selected.has(lead.Id) ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
+                        className={`group border-b border-gray-100 transition-colors ${selected.has(lead.Id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                       {/* Checkbox */}
                       <td className="px-3 py-3 w-10">
                         <button onClick={() => toggleSelect(lead.Id)}
                                 className="text-gray-400 hover:text-gray-700 transition-colors">
-                          {selected.has(lead.Id) ? <CheckSquare size={16} className="text-gray-800" /> : <Square size={16} />}
+                          {selected.has(lead.Id) ? <CheckSquare size={16} className="text-blue-600" /> : <Square size={16} />}
                         </button>
                       </td>
                       {/* Name */}
