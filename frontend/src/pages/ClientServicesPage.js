@@ -239,6 +239,7 @@ export default function ClientServicesPage() {
       if (payload.status === 'Done' && editingRecord?.status !== 'Done') {
         setLogTimeData({ client_name: payload.client_name, service_category: payload.service_category });
         setLogMins(''); setLogNotes(''); setLogDate(todayStr());
+        if (editingRecord) autoRenew({ ...editingRecord, ...payload });
       }
     } catch (err) {
       toast.error(await toastMsg('ClientServicesPage.save', err, 'Failed to save service'));
@@ -256,6 +257,35 @@ export default function ClientServicesPage() {
     }
   };
 
+  /* Auto-create next period row when a recurring service is marked Done */
+  const autoRenew = async (rec) => {
+    const freq = getFrequency(rec);
+    if (freq === 'One-time') return;
+    const months    = FREQ_MONTHS[freq] || 1;
+    const newPeriod = nextPeriodLabel(freq, rec.regulatory_due_date || rec.internal_due_date);
+    const payload   = {
+      client_name:         rec.client_name,
+      service_category:    rec.service_category,
+      assignee:            rec.assignee || '',
+      spoc:                rec.spoc || '',
+      internal_due_date:   advanceDate(rec.internal_due_date,   months),
+      regulatory_due_date: advanceDate(rec.regulatory_due_date, months),
+      fees_status:         '',
+      status:              'Not Started',
+      frequency:           freq,
+      period_label:        newPeriod,
+      is_recurring:        true,
+      recurrence_frequency: freq,
+    };
+    try {
+      await axios.post(`${API}/client-services`, payload, getAuthHeaders());
+      toast.success(`Next period created: ${newPeriod || 'next cycle'} · ${rec.service_category} for ${rec.client_name}`);
+      fetchRecords();
+    } catch {
+      toast.error('Marked Done but failed to create next period — use the Renew button manually');
+    }
+  };
+
   const quickUpdateStatus = async (rec, newStatus) => {
     setStatusMenu(null);
     try {
@@ -264,6 +294,7 @@ export default function ClientServicesPage() {
       if (newStatus === 'Done' && rec.status !== 'Done') {
         setLogTimeData({ client_name: rec.client_name, service_category: rec.service_category });
         setLogMins(''); setLogNotes(''); setLogDate(todayStr());
+        autoRenew(rec);
       }
     } catch { toast.error('Failed to update status'); }
   };
