@@ -39,8 +39,8 @@ const EMPTY_FORM = {
 
 /* ── Gradient palette for summary bars ─────────────────────── */
 const BAR_COLORS = [
-  '#111827','#374151','#4B5563','#6B7280','#1F2937',
-  '#9CA3AF','#374151','#4B5563','#6B7280','#D1D5DB',
+  '#000000','#222222','#444444','#666666','#000000',
+  '#222222','#444444','#000000','#333333','#555555',
 ];
 
 export default function TimesheetPage() {
@@ -215,10 +215,10 @@ export default function TimesheetPage() {
       {/* ── Summary cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Entries',     value: entries.length,                    icon: List,      color: '#111827' },
-          { label: 'Total Hours',       value: fmtMins(entries.reduce((s,e) => s+(parseInt(e.minutes)||0),0)), icon: Timer, color: '#374151' },
-          { label: 'Clients Served',    value: new Set(entries.map(e=>e.client_name)).size,  icon: Users,     color: '#4B5563' },
-          { label: 'Team Members',      value: new Set(entries.map(e=>e.user_name)).size,    icon: TrendingUp,color: '#6B7280' },
+          { label: 'Total Entries',     value: entries.length,                    icon: List,      color: '#000000' },
+          { label: 'Total Hours',       value: fmtMins(entries.reduce((s,e) => s+(parseInt(e.minutes)||0),0)), icon: Timer, color: '#000000' },
+          { label: 'Clients Served',    value: new Set(entries.map(e=>e.client_name)).size,  icon: Users,     color: '#000000' },
+          { label: 'Team Members',      value: new Set(entries.map(e=>e.user_name)).size,    icon: TrendingUp,color: '#000000' },
         ].map(({ label, value, icon: Icon, color }, i) => (
           <div key={i} className="card p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"

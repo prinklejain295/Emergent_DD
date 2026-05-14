@@ -20,30 +20,30 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 
 /* ── Color palettes ───────────────────────────────────────────── */
 const STATUS_COLORS = {
-  'Done':         '#111827',
-  'In Progress':  '#374151',
-  'Under Review': '#4B5563',
-  'Pending':      '#6B7280',
-  'Washington':   '#374151',
-  'Urgent':       '#111827',
-  'On Hold':      '#9CA3AF',
-  'Not Started':  '#D1D5DB',
+  'Done':         '#000000',
+  'In Progress':  '#444444',
+  'Under Review': '#666666',
+  'Pending':      '#888888',
+  'Washington':   '#000000',
+  'Urgent':       '#000000',
+  'On Hold':      '#AAAAAA',
+  'Not Started':  '#CCCCCC',
 };
 
 const FEES_COLORS = {
-  'Post Payment':     '#111827',
-  'Pre Payment':      '#374151',
-  'Pending Payment':  '#4B5563',
-  'Invoiced':         '#6B7280',
-  'Waived':           '#9CA3AF',
-  'On Hold':          '#D1D5DB',
+  'Post Payment':     '#000000',
+  'Pre Payment':      '#444444',
+  'Pending Payment':  '#222222',
+  'Invoiced':         '#666666',
+  'Waived':           '#AAAAAA',
+  'On Hold':          '#CCCCCC',
 };
 
 const STAT_GRADIENTS = [
-  { from: '#111827', to: '#374151' },
-  { from: '#374151', to: '#4B5563' },
-  { from: '#4B5563', to: '#6B7280' },
-  { from: '#1F2937', to: '#374151' },
+  { from: '#000000', to: '#000000' },
+  { from: '#000000', to: '#000000' },
+  { from: '#000000', to: '#000000' },
+  { from: '#000000', to: '#000000' },
 ];
 
 /* ── Custom Tooltip ───────────────────────────────────────────── */
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
       {/* ── Welcome Banner ──────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl p-7 text-white"
-           style={{ background: 'linear-gradient(135deg, #111827 0%, #1F2937 60%, #374151 100%)' }}>
+           style={{ background: '#000000' }}>
         {/* Decorative shapes */}
         <svg className="absolute right-0 top-0 opacity-10" width="240" height="160" viewBox="0 0 240 160" fill="none">
           <circle cx="200" cy="-20" r="100" stroke="white" strokeWidth="2" />
@@ -257,9 +257,9 @@ export default function Dashboard() {
       {/* ── List Modal (Pending / Unbilled / Overdue) ────────────── */}
       {showList && (() => {
         const cfg = {
-          pending:  { title: 'Pending Tasks',  list: stats.pendingList,  color: '#F59E0B', badge: (s) => s.status || 'Pending' },
-          unbilled: { title: 'Unbilled Work',  list: stats.unbilledList, color: '#3B82F6', badge: (s) => s.fees_status || 'Unpaid' },
-          overdue:  { title: 'Overdue Items',  list: stats.overdueList,  color: '#EF4444', badge: (s) => s.regulatory_due_date ? new Date(s.regulatory_due_date).toLocaleDateString('en-GB') : '—' },
+          pending:  { title: 'Pending Tasks',  list: stats.pendingList,  color: '#000000', badge: (s) => s.status || 'Pending' },
+          unbilled: { title: 'Unbilled Work',  list: stats.unbilledList, color: '#000000', badge: (s) => s.fees_status || 'Unpaid' },
+          overdue:  { title: 'Overdue Items',  list: stats.overdueList,  color: '#000000', badge: (s) => s.regulatory_due_date ? new Date(s.regulatory_due_date).toLocaleDateString('en-GB') : '—' },
         }[showList];
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
@@ -412,21 +412,21 @@ export default function Dashboard() {
             <AreaChart data={monthlyDeadlines} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradInternal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#374151" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#374151" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#000000" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#000000" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradRegulatory" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#F59E0B" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#555555" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#555555" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis  tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Area type="monotone" dataKey="Internal"   stroke="#374151" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#374151' }} />
-              <Area type="monotone" dataKey="Regulatory" stroke="#F59E0B" strokeWidth={2.5} fill="url(#gradRegulatory)" dot={{ r: 4, fill: '#F59E0B' }} />
+              <Area type="monotone" dataKey="Internal"   stroke="#000000" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#000000' }} />
+              <Area type="monotone" dataKey="Regulatory" stroke="#555555" strokeWidth={2.5} fill="url(#gradRegulatory)" dot={{ r: 4, fill: '#555555' }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

@@ -91,12 +91,12 @@ const getInitials = (c) => {
 };
 
 const GRADIENTS = [
-  'linear-gradient(135deg,#111827,#374151)',
-  'linear-gradient(135deg,#374151,#4B5563)',
-  'linear-gradient(135deg,#4B5563,#6B7280)',
-  'linear-gradient(135deg,#1F2937,#374151)',
-  'linear-gradient(135deg,#6B7280,#9CA3AF)',
-  'linear-gradient(135deg,#374151,#6B7280)',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
 ];
 
 const TagPills = ({ tags, max = 3 }) => {

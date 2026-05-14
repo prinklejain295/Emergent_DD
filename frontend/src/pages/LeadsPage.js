@@ -27,14 +27,14 @@ const PLATFORMS = [
 ];
 
 const STATUSES = [
-  { label: 'New Lead',       bg: '#F9FAFB', text: '#374151', border: '#E5E7EB', dot: '#9CA3AF' },
-  { label: 'Contacted',      bg: '#F3F4F6', text: '#374151', border: '#D1D5DB', dot: '#6B7280' },
-  { label: 'In Discussion',  bg: '#E5E7EB', text: '#1F2937', border: '#D1D5DB', dot: '#4B5563' },
-  { label: 'Proposal Sent',  bg: '#D1D5DB', text: '#111827', border: '#9CA3AF', dot: '#374151' },
-  { label: 'Negotiating',    bg: '#F3F4F6', text: '#374151', border: '#D1D5DB', dot: '#6B7280' },
-  { label: 'Converted',      bg: '#111827', text: '#F9FAFB', border: '#374151', dot: '#D1D5DB' },
-  { label: 'Lost',           bg: '#F9FAFB', text: '#9CA3AF', border: '#E5E7EB', dot: '#D1D5DB' },
-  { label: 'On Hold',        bg: '#F3F4F6', text: '#6B7280', border: '#E5E7EB', dot: '#9CA3AF' },
+  { label: 'New Lead',       bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
+  { label: 'Contacted',      bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
+  { label: 'In Discussion',  bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
+  { label: 'Proposal Sent',  bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000' },
+  { label: 'Negotiating',    bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
+  { label: 'Converted',      bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF' },
+  { label: 'Lost',           bg: '#FFFFFF', text: '#888888', border: '#CCCCCC', dot: '#CCCCCC' },
+  { label: 'On Hold',        bg: '#FFFFFF', text: '#555555', border: '#888888', dot: '#888888' },
 ];
 
 const getStatusStyle = (s) => STATUSES.find(o => o.label === s) || STATUSES[0];
@@ -63,12 +63,12 @@ const EMPTY = {
 const EMPTY_CF = { name:'', business:'', platform:'all', status:'all', manager:'all' };
 
 const GRADIENTS = [
-  'linear-gradient(135deg,#111827,#374151)',
-  'linear-gradient(135deg,#374151,#4B5563)',
-  'linear-gradient(135deg,#4B5563,#6B7280)',
-  'linear-gradient(135deg,#1F2937,#374151)',
-  'linear-gradient(135deg,#6B7280,#9CA3AF)',
-  'linear-gradient(135deg,#374151,#6B7280)',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
+  '#000000',
 ];
 
 /* ── Component ────────────────────────────────────────────────────── */

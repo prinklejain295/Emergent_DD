@@ -24,8 +24,8 @@ const STATUS_STYLE = {
 };
 
 const EVENT_STYLE = {
-  internal:   { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#6B7280', label: 'Internal' },
-  regulatory: { bg: '#111827', text: '#F9FAFB', border: '#374151', dot: '#9CA3AF', label: 'Regulatory' },
+  internal:   { bg: '#FFFFFF', text: '#000000', border: '#000000', dot: '#000000', label: 'Internal' },
+  regulatory: { bg: '#000000', text: '#FFFFFF', border: '#000000', dot: '#FFFFFF', label: 'Regulatory' },
 };
 
 export default function CalendarPage() {
