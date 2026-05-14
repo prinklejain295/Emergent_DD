@@ -70,8 +70,12 @@ const validate = (f) => {
 };
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
+/* Infer type from stored field, falling back to company presence.
+   Handles clients saved before the 'type' field was added to NocoDB. */
+const getClientType = (c) => c.type || (c.company?.trim() ? 'business' : 'individual');
+
 const getInitials = (c) => {
-  const n = c.type === 'business' ? (c.company || c.name) : (c.doing_business_as || c.name);
+  const n = getClientType(c) === 'business' ? (c.company || c.name) : (c.doing_business_as || c.name);
   return (n || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 };
 
@@ -156,7 +160,7 @@ export default function ClientsPage() {
   const openEdit = (c) => {
     setEditingClient(c);
     setFormData({
-      type: c.type || 'individual',
+      type: getClientType(c),
       name: c.name || '',
       doing_business_as: c.doing_business_as || '',
       company: c.company || '',
@@ -230,12 +234,12 @@ export default function ClientsPage() {
     .filter(c => {
       const q = search.toLowerCase();
       if (q && !(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q)) return false;
-      if (filterType !== 'all' && (c.type || 'individual') !== filterType) return false;
+      if (filterType !== 'all' && getClientType(c) !== filterType) return false;
       if (filterTag  !== 'all' && !(c.tags || '').includes(filterTag)) return false;
       // Column filters (list view)
       if (viewMode === 'list') {
         if (cf.name    && !(c.name    || '').toLowerCase().includes(cf.name.toLowerCase()))    return false;
-        if (cf.type   !== 'all' && (c.type || 'individual') !== cf.type)                        return false;
+        if (cf.type   !== 'all' && getClientType(c) !== cf.type)                                 return false;
         if (cf.company && !(c.company || '').toLowerCase().includes(cf.company.toLowerCase())) return false;
         if (cf.email   && !(c.email   || '').toLowerCase().includes(cf.email.toLowerCase()))   return false;
         if (cf.tags   !== 'all' && !(c.tags || '').includes(cf.tags))                          return false;
@@ -324,9 +328,9 @@ export default function ClientsPage() {
                 {getInitials(c)}
               </div>
               <div className="min-w-0">
-                {c.type === 'business' && c.company && <p className="font-bold text-gray-900 truncate text-sm">{c.company}</p>}
-                <p className={`truncate ${c.type === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-gray-900 text-sm'}`}>{c.name}</p>
-                {c.type === 'individual' && c.doing_business_as && <p className="text-xs text-gray-500 truncate">DBA: {c.doing_business_as}</p>}
+                {getClientType(c) === 'business' && c.company && <p className="font-bold text-gray-900 truncate text-sm">{c.company}</p>}
+                <p className={`truncate ${getClientType(c) === 'business' ? 'text-gray-500 text-xs' : 'font-bold text-gray-900 text-sm'}`}>{c.name}</p>
+                {getClientType(c) === 'individual' && c.doing_business_as && <p className="text-xs text-gray-500 truncate">DBA: {c.doing_business_as}</p>}
               </div>
             </div>
             <div className="space-y-1.5 text-sm text-gray-600 mb-3">
@@ -341,8 +345,8 @@ export default function ClientsPage() {
           </div>
         );
 
-        const businesses  = displayed.filter(c => c.type === 'business');
-        const individuals = displayed.filter(c => !c.type || c.type === 'individual');
+        const businesses  = displayed.filter(c => getClientType(c) === 'business');
+        const individuals = displayed.filter(c => getClientType(c) !== 'business');
         const showBoth    = filterType === 'all';
 
         return (
@@ -439,9 +443,9 @@ export default function ClientsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${c.type === 'business' ? 'bg-violet-100 text-violet-700' : 'bg-pink-50 text-pink-700'}`}>
-                        {c.type === 'business' ? <Building size={10} /> : <User size={10} />}
-                        {c.type === 'business' ? 'Business' : 'Individual'}
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${getClientType(c) === 'business' ? 'bg-violet-100 text-violet-700' : 'bg-pink-50 text-pink-700'}`}>
+                        {getClientType(c) === 'business' ? <Building size={10} /> : <User size={10} />}
+                        {getClientType(c) === 'business' ? 'Business' : 'Individual'}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{c.company || '—'}</td>
