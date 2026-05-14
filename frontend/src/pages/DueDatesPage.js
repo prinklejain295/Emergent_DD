@@ -294,10 +294,10 @@ export default function DueDatesPage() {
                       <button
                         onClick={() => handleStatusChange(dueDate.id, 'completed')}
                         data-testid={`complete-due-date-${dueDate.id}`}
-                        className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Mark as completed"
                       >
-                        <CheckCircle size={18} className="text-green-600" />
+                        <CheckCircle size={18} className="text-gray-700" />
                       </button>
                     )}
                     <button

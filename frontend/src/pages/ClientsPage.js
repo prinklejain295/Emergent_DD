@@ -91,12 +91,12 @@ const getInitials = (c) => {
 };
 
 const GRADIENTS = [
-  'linear-gradient(135deg,#7C3AED,#A855F7)',
-  'linear-gradient(135deg,#EC4899,#F43F5E)',
-  'linear-gradient(135deg,#3B82F6,#8B5CF6)',
-  'linear-gradient(135deg,#10B981,#3B82F6)',
-  'linear-gradient(135deg,#F59E0B,#EF4444)',
-  'linear-gradient(135deg,#06B6D4,#7C3AED)',
+  'linear-gradient(135deg,#111827,#374151)',
+  'linear-gradient(135deg,#374151,#4B5563)',
+  'linear-gradient(135deg,#4B5563,#6B7280)',
+  'linear-gradient(135deg,#1F2937,#374151)',
+  'linear-gradient(135deg,#6B7280,#9CA3AF)',
+  'linear-gradient(135deg,#374151,#6B7280)',
 ];
 
 const TagPills = ({ tags, max = 3 }) => {
@@ -385,10 +385,10 @@ export default function ClientsPage() {
             {(showBoth || filterType === 'business') && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 bg-violet-100 text-violet-700 px-3 py-1.5 rounded-xl">
+                  <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl">
                     <Building size={15} />
                     <span className="font-semibold text-sm">Business Clients</span>
-                    <span className="bg-violet-200 text-violet-800 text-xs font-bold px-2 py-0.5 rounded-full">{businesses.length}</span>
+                    <span className="bg-gray-200 text-gray-800 text-xs font-bold px-2 py-0.5 rounded-full">{businesses.length}</span>
                   </div>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
@@ -405,10 +405,10 @@ export default function ClientsPage() {
             {(showBoth || filterType === 'individual') && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 bg-pink-50 text-pink-700 px-3 py-1.5 rounded-xl">
+                  <div className="flex items-center gap-2 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-xl">
                     <User size={15} />
                     <span className="font-semibold text-sm">Individual Clients</span>
-                    <span className="bg-pink-100 text-pink-800 text-xs font-bold px-2 py-0.5 rounded-full">{individuals.length}</span>
+                    <span className="bg-gray-100 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">{individuals.length}</span>
                   </div>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
@@ -477,7 +477,7 @@ export default function ClientsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${getClientType(c) === 'business' ? 'bg-violet-100 text-violet-700' : 'bg-pink-50 text-pink-700'}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${getClientType(c) === 'business' ? 'bg-gray-100 text-gray-700' : 'bg-gray-50 text-gray-600'}`}>
                         {getClientType(c) === 'business' ? <Building size={10} /> : <User size={10} />}
                         {getClientType(c) === 'business' ? 'Business' : 'Individual'}
                       </span>

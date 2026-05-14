@@ -20,30 +20,30 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 
 /* ── Color palettes ───────────────────────────────────────────── */
 const STATUS_COLORS = {
-  'Done':         '#10B981',
-  'In Progress':  '#F59E0B',
-  'Under Review': '#3B82F6',
-  'Pending':      '#8B5CF6',
-  'Washington':   '#EF4444',
-  'Urgent':       '#EF4444',
-  'On Hold':      '#F97316',
-  'Not Started':  '#9CA3AF',
+  'Done':         '#111827',
+  'In Progress':  '#374151',
+  'Under Review': '#4B5563',
+  'Pending':      '#6B7280',
+  'Washington':   '#374151',
+  'Urgent':       '#111827',
+  'On Hold':      '#9CA3AF',
+  'Not Started':  '#D1D5DB',
 };
 
 const FEES_COLORS = {
-  'Post Payment':     '#10B981',
-  'Pre Payment':      '#F59E0B',
-  'Pending Payment':  '#EF4444',
-  'Invoiced':         '#3B82F6',
-  'Waived':           '#8B5CF6',
-  'On Hold':          '#F97316',
+  'Post Payment':     '#111827',
+  'Pre Payment':      '#374151',
+  'Pending Payment':  '#4B5563',
+  'Invoiced':         '#6B7280',
+  'Waived':           '#9CA3AF',
+  'On Hold':          '#D1D5DB',
 };
 
 const STAT_GRADIENTS = [
-  { from: '#7C3AED', to: '#A855F7' },
-  { from: '#F59E0B', to: '#F97316' },
-  { from: '#3B82F6', to: '#6366F1' },
-  { from: '#EF4444', to: '#EC4899' },
+  { from: '#111827', to: '#374151' },
+  { from: '#374151', to: '#4B5563' },
+  { from: '#4B5563', to: '#6B7280' },
+  { from: '#1F2937', to: '#374151' },
 ];
 
 /* ── Custom Tooltip ───────────────────────────────────────────── */
@@ -196,7 +196,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
       {/* ── Welcome Banner ──────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl p-7 text-white"
-           style={{ background: 'linear-gradient(135deg, #111827 0%, #7C3AED 50%, #A855F7 100%)' }}>
+           style={{ background: 'linear-gradient(135deg, #111827 0%, #1F2937 60%, #374151 100%)' }}>
         {/* Decorative shapes */}
         <svg className="absolute right-0 top-0 opacity-10" width="240" height="160" viewBox="0 0 240 160" fill="none">
           <circle cx="200" cy="-20" r="100" stroke="white" strokeWidth="2" />
@@ -279,8 +279,8 @@ export default function Dashboard() {
               <div className="overflow-y-auto flex-1 p-3 space-y-2">
                 {cfg.list.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                    <CheckCircle2 size={36} className="text-green-400 mb-2" />
-                    <p className="font-medium text-green-600">Nothing here!</p>
+                    <CheckCircle2 size={36} className="text-gray-400 mb-2" />
+                    <p className="font-medium text-gray-500">Nothing here!</p>
                   </div>
                 ) : cfg.list.map((s, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
@@ -312,10 +312,10 @@ export default function Dashboard() {
         {/* Pending tasks donut */}
         <div className="card p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.04]"
-               style={{ background: 'radial-gradient(circle, #7C3AED 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-100">
-              <Clock size={18} className="text-amber-600" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
+              <Clock size={18} className="text-gray-700" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">Pending Tasks</h2>
@@ -325,8 +325,8 @@ export default function Dashboard() {
 
           {pendingByStatus.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-44 text-gray-400">
-              <CheckCircle2 size={40} className="text-green-400 mb-2" />
-              <p className="font-medium text-green-600">All tasks completed!</p>
+              <CheckCircle2 size={40} className="text-gray-400 mb-2" />
+              <p className="font-medium text-gray-500">All tasks completed!</p>
             </div>
           ) : (
             <div className="flex items-center gap-4">
@@ -357,10 +357,10 @@ export default function Dashboard() {
         {/* Completed + billing status bar */}
         <div className="card p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.04]"
-               style={{ background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-100">
-              <Banknote size={18} className="text-blue-600" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
+              <Banknote size={18} className="text-gray-700" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">Billing Pipeline</h2>
@@ -398,7 +398,7 @@ export default function Dashboard() {
         {/* Monthly deadlines area chart — spans 3 cols */}
         <div className="card p-6 lg:col-span-3 relative overflow-hidden">
           <div className="absolute bottom-0 right-0 w-40 h-40 opacity-[0.04]"
-               style={{ background: 'radial-gradient(circle, #A855F7 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
               <Calendar size={18} className="text-gray-600" />
@@ -412,8 +412,8 @@ export default function Dashboard() {
             <AreaChart data={monthlyDeadlines} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradInternal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#7C3AED" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="#374151" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#374151" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradRegulatory" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#F59E0B" stopOpacity={0.25} />
@@ -425,7 +425,7 @@ export default function Dashboard() {
               <YAxis  tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Area type="monotone" dataKey="Internal"   stroke="#7C3AED" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#7C3AED' }} />
+              <Area type="monotone" dataKey="Internal"   stroke="#374151" strokeWidth={2.5} fill="url(#gradInternal)"   dot={{ r: 4, fill: '#374151' }} />
               <Area type="monotone" dataKey="Regulatory" stroke="#F59E0B" strokeWidth={2.5} fill="url(#gradRegulatory)" dot={{ r: 4, fill: '#F59E0B' }} />
             </AreaChart>
           </ResponsiveContainer>
@@ -434,10 +434,10 @@ export default function Dashboard() {
         {/* Status breakdown — spans 2 cols */}
         <div className="card p-6 lg:col-span-2 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-24 h-24 opacity-[0.05]"
-               style={{ background: 'radial-gradient(circle, #EF4444 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)' }} />
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-violet-100">
-              <TrendingUp size={18} className="text-violet-600" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100">
+              <TrendingUp size={18} className="text-gray-600" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-base">All Services</h2>

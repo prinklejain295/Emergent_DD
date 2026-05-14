@@ -36,19 +36,19 @@ export default function LoginPage({ onLogin }) {
     <div className="min-h-screen flex animate-fade-in">
       {/* Left side - Brand */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12 relative overflow-hidden"
-           style={{ background: 'linear-gradient(135deg, #111827 0%, #374151 50%, #7C3AED 100%)' }}>
+           style={{ background: 'linear-gradient(135deg, #111827 0%, #1F2937 50%, #374151 100%)' }}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #A855F7 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+             style={{ background: 'radial-gradient(circle, #9CA3AF 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
         <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #EC4899 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
+             style={{ background: 'radial-gradient(circle, #6B7280 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
         <div className="absolute top-1/4 right-12 w-32 h-32 rounded-full border-4 border-white/10" />
         <div className="absolute bottom-1/4 left-12 w-20 h-20 rounded-full border-2 border-white/10" />
         <div className="absolute top-1/2 left-1/2 w-48 h-48 rounded-full border border-white/5"
              style={{ transform: 'translate(-50%, -50%)' }} />
         {/* Floating geometric shapes */}
         <div className="absolute top-20 left-16 w-8 h-8 rotate-45 bg-white/10 rounded-sm animate-float" />
-        <div className="absolute bottom-24 right-20 w-6 h-6 rotate-12 bg-purple-300/20 rounded-sm animate-float"
+        <div className="absolute bottom-24 right-20 w-6 h-6 rotate-12 bg-gray-300/20 rounded-sm animate-float"
              style={{ animationDelay: '1s' }} />
         {/* Dot pattern */}
         <svg className="absolute inset-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
@@ -63,7 +63,7 @@ export default function LoginPage({ onLogin }) {
         <div className="text-white max-w-lg z-10 animate-slide-in">
           <div className="mb-8">
             <div className="w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-white text-3xl font-bold shadow-2xl"
-                 style={{ background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)' }}>
+                 style={{ background: 'linear-gradient(135deg, #111827 0%, #374151 100%)' }}>
               D
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function LoginPage({ onLogin }) {
           <div className="mt-12 space-y-4">
             {['Multi-user collaboration', 'Automated email reminders', 'Bulk client import'].map(f => (
               <div key={f} className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-purple-300 rounded-full shadow-sm" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full shadow-sm" />
                 <span className="text-white/75 font-medium">{f}</span>
               </div>
             ))}

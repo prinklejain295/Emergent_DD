@@ -24,8 +24,8 @@ const STATUS_STYLE = {
 };
 
 const EVENT_STYLE = {
-  internal:   { bg: '#FEF9C3', text: '#854D0E', border: '#FEF08A', dot: '#F59E0B', label: 'Internal' },
-  regulatory: { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#7C3AED', label: 'Regulatory' },
+  internal:   { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB', dot: '#6B7280', label: 'Internal' },
+  regulatory: { bg: '#111827', text: '#F9FAFB', border: '#374151', dot: '#9CA3AF', label: 'Regulatory' },
 };
 
 export default function CalendarPage() {
@@ -97,7 +97,7 @@ export default function CalendarPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
     </div>
   );
 
@@ -163,7 +163,7 @@ export default function CalendarPage() {
                 className={[
                   'min-h-[72px] p-1 rounded-lg border transition-all select-none',
                   !inMonth   ? 'bg-gray-50 opacity-35'  : 'bg-white',
-                  todayFlag  ? 'border-[#7C3AED] border-2' : 'border-[#F3F4F6]',
+                  todayFlag  ? 'border-gray-900 border-2' : 'border-[#F3F4F6]',
                   hasEvts    ? 'cursor-pointer hover:border-[#374151] hover:shadow-md' : '',
                 ].join(' ')}
               >
@@ -171,7 +171,7 @@ export default function CalendarPage() {
                 <div className="flex justify-center mb-0.5">
                   <span className={[
                     'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                    todayFlag ? 'bg-[#7C3AED] text-white' : 'text-gray-600',
+                    todayFlag ? 'bg-gray-900 text-white' : 'text-gray-600',
                   ].join(' ')}>
                     {format(day, 'd')}
                   </span>
@@ -257,7 +257,7 @@ export default function CalendarPage() {
                         </span>
                       ))}
                       {ev.fees_status && (
-                        <span className="text-xs bg-purple-50 text-gray-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-gray-50 text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full font-medium">
                           {ev.fees_status}
                         </span>
                       )}

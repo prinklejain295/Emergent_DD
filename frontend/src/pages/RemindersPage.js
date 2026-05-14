@@ -72,7 +72,7 @@ export default function RemindersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function RemindersPage() {
       </div>
 
       {/* Info Card */}
-      <div className="card p-6 mb-6 bg-[#F3F4F6] border-[#A855F7]">
+      <div className="card p-6 mb-6 bg-[#F3F4F6] border-gray-300">
         <h3 className="font-semibold text-[#374151] mb-2 flex items-center space-x-2">
           <Clock size={20} />
           <span>How Reminders Work</span>
@@ -138,7 +138,7 @@ export default function RemindersPage() {
                     title={reminder.is_active ? 'Disable' : 'Enable'}
                   >
                     {reminder.is_active ? (
-                      <ToggleRight size={24} className="text-[#7C3AED]" />
+                      <ToggleRight size={24} className="text-gray-900" />
                     ) : (
                       <ToggleLeft size={24} className="text-[#9CA3AF]" />
                     )}

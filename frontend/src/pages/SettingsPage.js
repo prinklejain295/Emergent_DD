@@ -14,20 +14,20 @@ const getAuthHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage
 
 /* ── Role config ─────────────────────────────────────────────────── */
 const ROLES = [
-  { value: 'admin',     label: 'Admin',      icon: Crown,     color: 'bg-yellow-100 text-yellow-800 border-yellow-200',  desc: 'Full access — manage team, view everything' },
-  { value: 'manager',  label: 'Manager',    icon: Briefcase, color: 'bg-blue-100 text-blue-800 border-blue-200',        desc: 'View all data, cannot manage team members' },
-  { value: 'consultant',label: 'Consultant', icon: UserCheck, color: 'bg-purple-100 text-purple-700 border-purple-200', desc: 'Restricted to assigned clients only' },
+  { value: 'admin',     label: 'Admin',      icon: Crown,     color: 'bg-gray-900 text-white border-gray-700',           desc: 'Full access — manage team, view everything' },
+  { value: 'manager',  label: 'Manager',    icon: Briefcase, color: 'bg-gray-100 text-gray-700 border-gray-200',        desc: 'View all data, cannot manage team members' },
+  { value: 'consultant',label: 'Consultant', icon: UserCheck, color: 'bg-gray-100 text-gray-600 border-gray-200', desc: 'Restricted to assigned clients only' },
 ];
 
 const getRoleConfig = (r) => ROLES.find(x => x.value === r) || ROLES[2];
 
 const GRADIENTS = [
-  'linear-gradient(135deg,#7C3AED,#A855F7)',
-  'linear-gradient(135deg,#3B82F6,#6366F1)',
-  'linear-gradient(135deg,#EC4899,#F43F5E)',
-  'linear-gradient(135deg,#10B981,#3B82F6)',
-  'linear-gradient(135deg,#F59E0B,#EF4444)',
-  'linear-gradient(135deg,#06B6D4,#7C3AED)',
+  'linear-gradient(135deg,#111827,#374151)',
+  'linear-gradient(135deg,#374151,#4B5563)',
+  'linear-gradient(135deg,#4B5563,#6B7280)',
+  'linear-gradient(135deg,#1F2937,#374151)',
+  'linear-gradient(135deg,#6B7280,#9CA3AF)',
+  'linear-gradient(135deg,#374151,#6B7280)',
 ];
 
 const initials = (name) => (name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -401,7 +401,7 @@ export default function SettingsPage() {
         const strength = pwdStrength(form.password);
         const checks   = pwdChecks(form.password);
         const emailOk  = !form.email || emailRx.test(form.email.trim());
-        const strengthColor = ['#E5E7EB','#EF4444','#F59E0B','#3B82F6','#10B981'][strength];
+        const strengthColor = ['#E5E7EB','#D1D5DB','#9CA3AF','#6B7280','#111827'][strength];
         const strengthLabel = ['','Weak','Fair','Good','Strong'][strength];
         return (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -453,7 +453,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {Object.entries(PWD_LABELS).map(([key, label]) => (
-                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-green-600' : 'text-gray-400'}`}>
+                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
                             <span>{checks[key] ? '✓' : '○'}</span> {label}
                           </div>
                         ))}
@@ -497,7 +497,7 @@ export default function SettingsPage() {
       {resetTarget && (() => {
         const strength = pwdStrength(newPwd);
         const checks   = pwdChecks(newPwd);
-        const strengthColor = ['#E5E7EB','#EF4444','#F59E0B','#3B82F6','#10B981'][strength];
+        const strengthColor = ['#E5E7EB','#D1D5DB','#9CA3AF','#6B7280','#111827'][strength];
         const strengthLabel = ['','Weak','Fair','Good','Strong'][strength];
         return (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -531,7 +531,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {Object.entries(PWD_LABELS).map(([key, label]) => (
-                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-green-600' : 'text-gray-400'}`}>
+                          <div key={key} className={`flex items-center gap-1.5 text-xs ${checks[key] ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
                             <span>{checks[key] ? '✓' : '○'}</span> {label}
                           </div>
                         ))}
