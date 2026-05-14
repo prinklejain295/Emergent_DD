@@ -49,9 +49,20 @@ const TAG_COLORS = {
 };
 const getTagStyle = (tag) => TAG_COLORS[tag] || { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
 
+/* ── Client categories ───────────────────────────────────────────── */
+const CATEGORIES = [
+  { value: 'Diamond',  label: '💎 Diamond',  bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE' },
+  { value: 'Platinum', label: '🏆 Platinum', bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' },
+  { value: 'Gold',     label: '🥇 Gold',     bg: '#FEF9C3', text: '#854D0E', border: '#FDE68A' },
+  { value: 'Silver',   label: '🥈 Silver',   bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
+  { value: 'Bronze',   label: '🥉 Bronze',   bg: '#FFEDD5', text: '#9A3412', border: '#FED7AA' },
+  { value: 'Standard', label: '📋 Standard', bg: '#F9FAFB', text: '#6B7280', border: '#E5E7EB' },
+];
+const getCategoryStyle = (cat) => CATEGORIES.find(c => c.value === cat) || null;
+
 const EMPTY = {
   type: 'individual', name: '', doing_business_as: '', company: '',
-  email: '', phone_code: '+91', phone: '', tags: [], notes: '',
+  email: '', phone_code: '+91', phone: '', tags: [], notes: '', category: '',
 };
 
 /* ── Validation (no browser HTML5 validation — we do it ourselves) ── */
@@ -130,11 +141,12 @@ export default function ClientsPage() {
   const tagMenuRef = useRef(null);
 
   /* Toolbar filters */
-  const [search, setSearch]         = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterTag, setFilterTag]   = useState('all');
-  const [sortKey, setSortKey]       = useState('name');
-  const [sortDir, setSortDir]       = useState('asc');
+  const [search, setSearch]               = useState('');
+  const [filterType, setFilterType]       = useState('all');
+  const [filterTag, setFilterTag]         = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [sortKey, setSortKey]             = useState('name');
+  const [sortDir, setSortDir]             = useState('asc');
 
   /* Column-level filters (list view only) */
   const [cf, setCf] = useState({ name: '', type: 'all', company: '', email: '', tags: 'all' });
@@ -169,6 +181,7 @@ export default function ClientsPage() {
       phone: c.phone || '',
       tags: c.tags ? c.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       notes: c.notes || '',
+      category: c.category || '',
     });
     setFormErrors({});
     setShowModal(true);
@@ -195,6 +208,7 @@ export default function ClientsPage() {
       doing_business_as: formData.type === 'individual' ? formData.doing_business_as : '',
       email: formData.email.trim(), phone: formData.phone, phone_code: formData.phone_code,
       type: formData.type, tags: formData.tags.join(', '), notes: formData.notes,
+      category: formData.category || '',
     };
     try {
       if (editingClient) {
@@ -234,15 +248,17 @@ export default function ClientsPage() {
     .filter(c => {
       const q = search.toLowerCase();
       if (q && !(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q)) return false;
-      if (filterType !== 'all' && getClientType(c) !== filterType) return false;
-      if (filterTag  !== 'all' && !(c.tags || '').includes(filterTag)) return false;
+      if (filterType     !== 'all' && getClientType(c) !== filterType) return false;
+      if (filterTag      !== 'all' && !(c.tags || '').includes(filterTag)) return false;
+      if (filterCategory !== 'all' && (c.category || '') !== filterCategory) return false;
       // Column filters (list view)
       if (viewMode === 'list') {
         if (cf.name    && !(c.name    || '').toLowerCase().includes(cf.name.toLowerCase()))    return false;
         if (cf.type   !== 'all' && getClientType(c) !== cf.type)                                 return false;
-        if (cf.company && !(c.company || '').toLowerCase().includes(cf.company.toLowerCase())) return false;
-        if (cf.email   && !(c.email   || '').toLowerCase().includes(cf.email.toLowerCase()))   return false;
-        if (cf.tags   !== 'all' && !(c.tags || '').includes(cf.tags))                          return false;
+        if (cf.company   && !(c.company  || '').toLowerCase().includes(cf.company.toLowerCase())) return false;
+        if (cf.email     && !(c.email    || '').toLowerCase().includes(cf.email.toLowerCase()))   return false;
+        if (cf.tags     !== 'all' && !(c.tags     || '').includes(cf.tags))                       return false;
+        if (cf.category && cf.category !== 'all' && (c.category || '') !== cf.category)           return false;
       }
       return true;
     })
@@ -288,7 +304,11 @@ export default function ClientsPage() {
           <option value="individual">Individual</option>
           <option value="business">Business</option>
         </select>
-        <select className="input-field text-sm h-10 sm:w-44" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+        <select className="input-field text-sm h-10 sm:w-36" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="all">All Categories</option>
+          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        <select className="input-field text-sm h-10 sm:w-36" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
           <option value="all">All Countries</option>
           {COUNTRY_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
@@ -300,9 +320,13 @@ export default function ClientsPage() {
           <option value="email-asc">Email A→Z</option>
         </select>
         {/* View toggle */}
-        <div className="flex rounded-xl border-2 border-[#E5E7EB] overflow-hidden h-10 self-center">
-          <button onClick={() => setViewMode('board')} className={`px-3 flex items-center transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}><LayoutGrid size={16} /></button>
-          <button onClick={() => setViewMode('list')}  className={`px-3 flex items-center transition-colors ${viewMode === 'list'  ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}><List size={16} /></button>
+        <div className="flex rounded-xl border-2 border-gray-200 overflow-hidden h-10 self-center flex-shrink-0">
+          <button onClick={() => setViewMode('board')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+            <LayoutGrid size={14} /> Board
+          </button>
+          <button onClick={() => setViewMode('list')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+            <List size={14} /> List
+          </button>
         </div>
       </div>
 
@@ -333,6 +357,12 @@ export default function ClientsPage() {
                 {getClientType(c) === 'individual' && c.doing_business_as && <p className="text-xs text-gray-500 truncate">DBA: {c.doing_business_as}</p>}
               </div>
             </div>
+            {(() => { const cat = getCategoryStyle(c.category); return cat ? (
+              <span className="inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border mb-3"
+                    style={{ background: cat.bg, color: cat.text, borderColor: cat.border }}>
+                {cat.label}
+              </span>
+            ) : null; })()}
             <div className="space-y-1.5 text-sm text-gray-600 mb-3">
               <div className="flex items-center gap-2 truncate"><Mail size={13} className="text-gray-500 flex-shrink-0" /><span className="truncate">{c.email || '—'}</span></div>
               {c.phone && <div className="flex items-center gap-2"><Phone size={13} className="text-gray-500 flex-shrink-0" /><span>{c.phone_code || ''} {c.phone}</span></div>}
@@ -406,7 +436,7 @@ export default function ClientsPage() {
               <thead>
                 {/* Column headers */}
                 <tr style={{ background: '#111827' }}>
-                  {[['name','Name'],['type','Type'],['company','Company / DBA'],['email','Email'],['phone','Phone'],['tags','Countries'],['','']].map(([key, label]) => (
+                  {[['name','Name'],['type','Type'],['category','Category'],['company','Company / DBA'],['email','Email'],['phone','Phone'],['tags','Countries'],['','']].map(([key, label]) => (
                     <th key={key} onClick={() => key && toggleSort(key)}
                         className={`px-4 py-3.5 text-left text-white font-semibold text-xs tracking-wide uppercase whitespace-nowrap ${key ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}>
                       {label}{key && <SortIcon col={key} />}
@@ -419,6 +449,10 @@ export default function ClientsPage() {
                   <th className="px-3 py-2 font-normal">
                     <ColFilter type="select" value={cf.type} onChange={v => setColFilter('type', v)}
                                options={[{ value: 'all', label: 'All' }, { value: 'individual', label: 'Individual' }, { value: 'business', label: 'Business' }]} />
+                  </th>
+                  <th className="px-3 py-2 font-normal">
+                    <ColFilter type="select" value={cf.category || 'all'} onChange={v => setColFilter('category', v)}
+                               options={[{ value: 'all', label: 'All' }, ...CATEGORIES.map(c => ({ value: c.value, label: c.value }))]} />
                   </th>
                   <th className="px-3 py-2 font-normal"><ColFilter value={cf.company} onChange={v => setColFilter('company', v)} placeholder="Filter company…" /></th>
                   <th className="px-3 py-2 font-normal"><ColFilter value={cf.email} onChange={v => setColFilter('email', v)} placeholder="Filter email…" /></th>
@@ -447,6 +481,14 @@ export default function ClientsPage() {
                         {getClientType(c) === 'business' ? <Building size={10} /> : <User size={10} />}
                         {getClientType(c) === 'business' ? 'Business' : 'Individual'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {getCategoryStyle(c.category) ? (
+                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border"
+                              style={{ background: getCategoryStyle(c.category).bg, color: getCategoryStyle(c.category).text, borderColor: getCategoryStyle(c.category).border }}>
+                          {getCategoryStyle(c.category).label}
+                        </span>
+                      ) : <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{c.company || '—'}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{c.email}</td>
@@ -596,6 +638,26 @@ export default function ClientsPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="label">Client Category</label>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => set('category', '')}
+                          className={`text-xs px-3 py-1.5 rounded-full border-2 font-medium transition-all ${!formData.category ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}>
+                    None
+                  </button>
+                  {CATEGORIES.map(cat => (
+                    <button key={cat.value} type="button" onClick={() => set('category', cat.value)}
+                            className={`text-xs px-3 py-1.5 rounded-full border-2 font-medium transition-all ${formData.category === cat.value ? 'border-gray-900 ring-2 ring-gray-300' : 'border-transparent hover:border-gray-300'}`}
+                            style={formData.category === cat.value
+                              ? { background: cat.bg, color: cat.text, borderColor: cat.border }
+                              : { background: cat.bg, color: cat.text, borderColor: cat.border, opacity: 0.7 }}>
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Notes */}

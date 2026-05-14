@@ -253,6 +253,7 @@ def create_client():
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
         "tags": data.get('tags', ''), "notes": data.get('notes'),
+        "category": data.get('category', ''),
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     if result is None:
@@ -271,7 +272,8 @@ def update_client(client_id):
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
-        "tags": data.get('tags', ''), "notes": data.get('notes')
+        "tags": data.get('tags', ''), "notes": data.get('notes'),
+        "category": data.get('category', '')
     })
     return jsonify({"id": client_id, **data})
 
