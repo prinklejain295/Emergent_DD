@@ -145,7 +145,7 @@ export default function ClientServicesPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [formData, setFormData]           = useState(EMPTY);
   const [filters, setFilters]             = useState(EMPTY_FILTERS);
-  const [viewMode, setViewMode]           = useState('grouped');
+  const [viewMode, setViewMode]           = useState('flat');
   const [statusMenu, setStatusMenu]       = useState(null);
   const fileInputRef                      = useRef(null);
 
