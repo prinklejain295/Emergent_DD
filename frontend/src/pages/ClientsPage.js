@@ -51,12 +51,12 @@ const getTagStyle = (tag) => TAG_COLORS[tag] || { bg: '#F3F4F6', text: '#374151'
 
 /* ── Client categories ───────────────────────────────────────────── */
 const CATEGORIES = [
-  { value: 'Diamond',  label: '💎 Diamond',  bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE' },
-  { value: 'Platinum', label: '🏆 Platinum', bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' },
-  { value: 'Gold',     label: '🥇 Gold',     bg: '#FEF9C3', text: '#854D0E', border: '#FDE68A' },
-  { value: 'Silver',   label: '🥈 Silver',   bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
-  { value: 'Bronze',   label: '🥉 Bronze',   bg: '#FFEDD5', text: '#9A3412', border: '#FED7AA' },
-  { value: 'Standard', label: '📋 Standard', bg: '#F9FAFB', text: '#6B7280', border: '#E5E7EB' },
+  { value: 'Diamond',  label: 'Diamond',  bg: '#111827', text: '#FFFFFF', border: '#111827' },
+  { value: 'Platinum', label: 'Platinum', bg: '#374151', text: '#FFFFFF', border: '#374151' },
+  { value: 'Gold',     label: 'Gold',     bg: '#6B7280', text: '#FFFFFF', border: '#6B7280' },
+  { value: 'Silver',   label: 'Silver',   bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' },
+  { value: 'Bronze',   label: 'Bronze',   bg: '#FFFFFF', text: '#374151', border: '#D1D5DB' },
+  { value: 'Standard', label: 'Standard', bg: '#FFFFFF', text: '#9CA3AF', border: '#E5E7EB' },
 ];
 const getCategoryStyle = (cat) => CATEGORIES.find(c => c.value === cat) || null;
 
