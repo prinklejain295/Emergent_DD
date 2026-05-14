@@ -421,9 +421,11 @@ def create_client_service():
         "internal_due_date": data.get('internal_due_date'),
         "regulatory_due_date": data.get('regulatory_due_date'),
         "fees_status":          data.get('fees_status', ''),
-        "status":               data.get('status', 'Pending'),
+        "status":               data.get('status', 'Not Started'),
         "is_recurring":         data.get('is_recurring', False),
         "recurrence_frequency": data.get('recurrence_frequency', ''),
+        "frequency":            data.get('frequency', ''),
+        "period_label":         data.get('period_label', ''),
         "created_at":           datetime.now(timezone.utc).isoformat()
     })
     if result is None:
@@ -455,6 +457,8 @@ def update_client_service(record_id):
         "status":               data.get('status'),
         "is_recurring":         data.get('is_recurring', False),
         "recurrence_frequency": data.get('recurrence_frequency', ''),
+        "frequency":            data.get('frequency', ''),
+        "period_label":         data.get('period_label', ''),
     })
     return jsonify({"Id": record_id, **data})
 
