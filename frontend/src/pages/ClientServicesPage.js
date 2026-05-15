@@ -146,7 +146,9 @@ export default function ClientServicesPage() {
   const [formData, setFormData]           = useState(EMPTY);
   const [filters, setFilters]             = useState(EMPTY_FILTERS);
   const [viewMode, setViewMode]           = useState('flat');
+  const [activeTab, setActiveTab]         = useState('active');
   const [statusMenu, setStatusMenu]       = useState(null);
+  const [feesMenu, setFeesMenu]           = useState(null);
   const fileInputRef                      = useRef(null);
 
   /* Log-time popup */
@@ -159,7 +161,10 @@ export default function ClientServicesPage() {
   useEffect(() => { fetchRecords(); }, []);
 
   useEffect(() => {
-    const h = (e) => { if (!e.target.closest('[data-status-menu]')) setStatusMenu(null); };
+    const h = (e) => {
+      if (!e.target.closest('[data-status-menu]')) setStatusMenu(null);
+      if (!e.target.closest('[data-fees-menu]'))   setFeesMenu(null);
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
@@ -219,12 +224,14 @@ export default function ClientServicesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isOneTime = formData.frequency === 'One-time';
+    const shouldArchive = formData.status === 'Done' && formData.fees_status === 'Post Payment';
     const payload = {
       ...formData,
       internal_due_date:    formData.internal_due_date   || null,
       regulatory_due_date:  formData.regulatory_due_date || null,
       is_recurring:         !isOneTime,
       recurrence_frequency: isOneTime ? '' : formData.frequency,
+      archived:             shouldArchive,
     };
     try {
       if (editingRecord) {
@@ -297,6 +304,21 @@ export default function ClientServicesPage() {
         autoRenew(rec);
       }
     } catch { toast.error('Failed to update status'); }
+  };
+
+  const quickUpdateFees = async (rec, newFees) => {
+    setFeesMenu(null);
+    const shouldArchive = rec.status === 'Done' && newFees === 'Post Payment';
+    try {
+      await axios.put(`${API}/client-services/${rec.Id}`,
+        { ...rec, fees_status: newFees, archived: shouldArchive },
+        getAuthHeaders()
+      );
+      setRecords(prev => prev.map(r =>
+        r.Id === rec.Id ? { ...r, fees_status: newFees, archived: shouldArchive } : r
+      ));
+      if (shouldArchive) toast.success(`Archived: ${rec.service_category} for ${rec.client_name}`);
+    } catch { toast.error('Failed to update fees status'); }
   };
 
   /* ── EXCEL IMPORT ─────────────────────────────────────────────── */
@@ -398,11 +420,15 @@ export default function ClientServicesPage() {
   const activeFilterCount = Object.entries(filters).filter(([, v]) => v !== 'all' && v !== '').length;
   const spocOptions = [...new Set(records.map(r => r.spoc).filter(Boolean))].sort();
 
+  const isArchived = (r) => r.archived === true || r.archived === 'true';
+
   const filtered = records.filter(r => {
     const cn = (r.client_name || '').toLowerCase();
     const as = (r.assignee   || '').toLowerCase();
     const fr = getFrequency(r);
+    const matchesTab = activeTab === 'archived' ? isArchived(r) : !isArchived(r);
     return (
+      matchesTab &&
       (!filters.client_name    || cn.includes(filters.client_name.toLowerCase())) &&
       (filters.service_category === 'all' || r.service_category === filters.service_category) &&
       (!filters.assignee       || as.includes(filters.assignee.toLowerCase())) &&
@@ -411,6 +437,9 @@ export default function ClientServicesPage() {
       (filters.status      === 'all' || r.status      === filters.status)
     );
   });
+
+  const activeCount   = records.filter(r => !isArchived(r)).length;
+  const archivedCount = records.filter(r =>  isArchived(r)).length;
 
   const existingClients = [...new Set(records.map(r => r.client_name).filter(Boolean))];
 
@@ -451,6 +480,42 @@ export default function ClientServicesPage() {
       )}
     </div>
   );
+
+  /* ── Fees badge — clickable dropdown on Done records ─────────── */
+  const FeesBadge = ({ rec }) => {
+    const isDone = rec.status === 'Done';
+    if (!isDone) {
+      return rec.fees_status
+        ? <span className="bg-gray-50 text-gray-700 border border-gray-200 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">{rec.fees_status}</span>
+        : <span className="text-gray-400">—</span>;
+    }
+    return (
+      <div className="relative" data-fees-menu>
+        <button onClick={() => setFeesMenu(feesMenu === rec.Id ? null : rec.Id)}
+                className={`text-xs px-2.5 py-1 rounded-full font-medium cursor-pointer border whitespace-nowrap transition-colors ${
+                  rec.fees_status === 'Post Payment'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                }`}>
+          {rec.fees_status || 'Set fees…'} {!rec.fees_status && <ChevronDown size={10} className="inline" />}
+        </button>
+        {feesMenu === rec.Id && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-20 p-1 min-w-[200px]">
+            {FEES_STATUS_OPTIONS.map(f => (
+              <button key={f} onClick={() => quickUpdateFees(rec, f)}
+                      className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-gray-50 flex items-center justify-between transition-colors ${
+                        rec.fees_status === f ? 'bg-gray-50 font-semibold' : ''
+                      }`}>
+                {f}
+                {f === 'Post Payment' && <span className="text-gray-400 text-xs ml-2">→ archives</span>}
+                {rec.fees_status === f && <span className="text-gray-400">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   /* ── Row actions ──────────────────────────────────────────────── */
   const RowActions = ({ rec }) => (
@@ -499,6 +564,28 @@ export default function ClientServicesPage() {
             <Plus size={15} /> Add Service
           </button>
         </div>
+      </div>
+
+      {/* Active / Archived tabs */}
+      <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit">
+        <button onClick={() => setActiveTab('active')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'active' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+          Active
+          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'active' ? 'bg-gray-900 text-white' : 'bg-gray-300 text-gray-600'}`}>
+            {activeCount}
+          </span>
+        </button>
+        <button onClick={() => setActiveTab('archived')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'archived' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+          Archived
+          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'archived' ? 'bg-gray-900 text-white' : 'bg-gray-300 text-gray-600'}`}>
+            {archivedCount}
+          </span>
+        </button>
       </div>
 
       {/* Filter + view toggle bar */}
@@ -696,11 +783,7 @@ export default function ClientServicesPage() {
                               <StatusBadge rec={rec} />
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
-                              {rec.fees_status
-                                ? <span className="bg-gray-50 text-gray-700 border border-gray-200 text-xs px-2 py-0.5 rounded-full font-medium">
-                                    {rec.fees_status}
-                                  </span>
-                                : <span className="text-gray-400">—</span>}
+                              <FeesBadge rec={rec} />
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <RowActions rec={rec} />
@@ -775,9 +858,7 @@ export default function ClientServicesPage() {
                         <StatusBadge rec={rec} />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {rec.fees_status
-                          ? <span className="bg-gray-50 text-gray-700 border border-gray-200 text-xs px-2 py-0.5 rounded-full font-medium">{rec.fees_status}</span>
-                          : <span className="text-gray-400">—</span>}
+                        <FeesBadge rec={rec} />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <RowActions rec={rec} />

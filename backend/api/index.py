@@ -426,6 +426,7 @@ def create_client_service():
         "recurrence_frequency": data.get('recurrence_frequency', ''),
         "frequency":            data.get('frequency', ''),
         "period_label":         data.get('period_label', ''),
+        "archived":             data.get('archived', False),
         "created_at":           datetime.now(timezone.utc).isoformat()
     })
     if result is None:
@@ -459,6 +460,7 @@ def update_client_service(record_id):
         "recurrence_frequency": data.get('recurrence_frequency', ''),
         "frequency":            data.get('frequency', ''),
         "period_label":         data.get('period_label', ''),
+        "archived":             data.get('archived', False),
     })
     return jsonify({"Id": record_id, **data})
 
