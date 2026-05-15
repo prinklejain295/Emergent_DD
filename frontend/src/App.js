@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import ClientsPage from './pages/ClientsPage';
 import ClientServicesPage from './pages/ClientServicesPage';
@@ -76,6 +77,10 @@ function App() {
             }
           />
           <Route
+            path="/home"
+            element={<LandingPage />}
+          />
+          <Route
             path="/"
             element={
               isAuthenticated ? (
@@ -83,7 +88,7 @@ function App() {
                   <Dashboard />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <LandingPage />
               )
             }
           />
