@@ -100,7 +100,7 @@ function App() {
                   <ClientsPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -112,7 +112,7 @@ function App() {
                   <ClientServicesPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -124,7 +124,7 @@ function App() {
                   <SettingsPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -136,7 +136,7 @@ function App() {
                   <LeadsPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -148,7 +148,7 @@ function App() {
                   <RemindersPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -160,7 +160,7 @@ function App() {
                   <CalendarPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
@@ -172,7 +172,7 @@ function App() {
                   <TimesheetPage />
                 </Layout>
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />
