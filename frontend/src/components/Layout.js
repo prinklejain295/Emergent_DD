@@ -7,7 +7,7 @@ export default function Layout({ children, user, organization, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { path: '/',                icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/dashboard',       icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/clients',         icon: Users,           label: 'Clients'   },
     { path: '/client-services', icon: ClipboardList,   label: 'Services'  },
     { path: '/leads',           icon: Target,          label: 'Leads'     },
