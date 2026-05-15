@@ -53,19 +53,16 @@ function App() {
     setOrganization(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#FAFAFA]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
-      </div>
-    );
-  }
-
   return (
     <BrowserRouter>
       <div className="App">
         <Toaster position="top-right" />
-        <Routes>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-screen bg-white">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+          </div>
+        ) : null}
+        {!loading && <Routes>
           <Route
             path="/login"
             element={
@@ -176,7 +173,7 @@ function App() {
               )
             }
           />
-        </Routes>
+        </Routes>}
       </div>
     </BrowserRouter>
   );
