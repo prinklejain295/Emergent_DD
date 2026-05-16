@@ -9,7 +9,7 @@ const FEATURES = [
   {
     icon: FileText,
     title: 'Full Compliance Tracking',
-    desc: 'Track every service — GST, ITR, TDS, ROC, Payroll — for every client in one place. Never lose sight of what's due.',
+    desc: "Track every service — GST, ITR, TDS, ROC, Payroll — for every client in one place. Never lose sight of what's due.",
   },
   {
     icon: Clock,
