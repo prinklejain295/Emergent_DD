@@ -634,7 +634,7 @@ export default function ClientServicesPage() {
 
       {/* Active / Archived tabs */}
       <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit">
-        <button onClick={() => { setActiveTab('active'); clearSelection(); }}}
+        <button onClick={() => { setActiveTab('active'); clearSelection(); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   activeTab === 'active' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}>
@@ -643,7 +643,7 @@ export default function ClientServicesPage() {
             {activeCount}
           </span>
         </button>
-        <button onClick={() => { setActiveTab('archived'); clearSelection(); }}}
+        <button onClick={() => { setActiveTab('archived'); clearSelection(); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   activeTab === 'archived' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}>
