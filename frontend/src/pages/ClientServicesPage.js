@@ -387,6 +387,24 @@ export default function ClientServicesPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} service${selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+    setBulkApplying(true);
+    try {
+      await Promise.all([...selectedIds].map(id =>
+        axios.delete(`${API}/client-services/${id}`, getAuthHeaders())
+      ));
+      setRecords(prev => prev.filter(r => !selectedIds.has(r.Id)));
+      toast.success(`Deleted ${selectedIds.size} service${selectedIds.size !== 1 ? 's' : ''}`);
+      clearSelection();
+    } catch {
+      toast.error('Some deletes failed — please retry');
+    } finally {
+      setBulkApplying(false);
+    }
+  };
+
   /* ── EXCEL IMPORT ─────────────────────────────────────────────── */
   const handleExcelUpload = async (e) => {
     const file = e.target.files[0];
@@ -776,6 +794,10 @@ export default function ClientServicesPage() {
             <button onClick={handleBulkApply} disabled={bulkApplying}
                     className="btn-primary text-sm py-2 px-4">
               {bulkApplying ? 'Applying…' : `Apply to ${selectedIds.size}`}
+            </button>
+            <button onClick={handleBulkDelete} disabled={bulkApplying}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors">
+              <Trash2 size={14} /> Delete {selectedIds.size}
             </button>
             <button onClick={clearSelection}
                     className="btn-outline text-sm py-2 px-3">
