@@ -193,7 +193,9 @@ export default function ClientsPage() {
       email: c.email || '',
       phone_code: c.phone_code || '+91',
       phone: c.phone || '',
-      tags: c.tags ? c.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      tags: Array.isArray(c.tags)
+        ? c.tags
+        : (c.tags ? String(c.tags).split(',').map(t => t.trim()).filter(Boolean) : []),
       notes: c.notes || '',
       category: c.category || '',
     });
@@ -217,11 +219,17 @@ export default function ClientsPage() {
     e.preventDefault();
     const errs = validate(formData);
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
+
+    // Safely convert tags to string regardless of state type
+    const tagsStr = Array.isArray(formData.tags)
+      ? formData.tags.join(', ')
+      : String(formData.tags || '');
+
     const payload = {
       name: formData.name, company: formData.type === 'business' ? formData.company : '',
       doing_business_as: formData.type === 'individual' ? formData.doing_business_as : '',
       email: formData.email.trim(), phone: formData.phone, phone_code: formData.phone_code,
-      type: formData.type, tags: formData.tags.join(', '), notes: formData.notes,
+      type: formData.type, tags: tagsStr, notes: formData.notes,
       category: formData.category || '',
     };
     try {
@@ -233,7 +241,21 @@ export default function ClientsPage() {
         toast.success('Client created');
       }
       setShowModal(false);
-      fetchClients();
+
+      // Fetch fresh list and verify tags were actually persisted in NocoDB
+      const freshRes = await axios.get(`${API}/clients`, getAuthHeaders());
+      const freshClients = Array.isArray(freshRes.data) ? freshRes.data : [];
+      setClients(freshClients);
+
+      if (tagsStr && editingClient) {
+        const persisted = freshClients.find(c => String(c.Id) === String(editingClient.Id));
+        if (persisted && !persisted.tags) {
+          toast.error(
+            'Country was not saved — the "tags" field is missing from your NocoDB clients table. Add it as a Single line text field, then save again.',
+            { duration: 12000 }
+          );
+        }
+      }
     } catch (err) {
       toast.error(await toastMsg('ClientsPage.save', err, err.response?.data?.error || 'Failed to save'));
     }
