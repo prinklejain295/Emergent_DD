@@ -249,13 +249,12 @@ def get_clients():
     return jsonify(clients)
 
 def _tags_for_nocodb(raw):
-    """Convert comma-separated string to list for NocoDB.
-    NocoDB Tags (multi-select) field requires an array; Text field also accepts it."""
+    """Return a plain comma-separated string for NocoDB Single line text field."""
     if not raw:
-        return []
+        return ''
     if isinstance(raw, list):
-        return raw
-    return [t.strip() for t in str(raw).split(',') if t.strip()]
+        return ', '.join(str(v) for v in raw if v)
+    return str(raw)
 
 def _tags_from_nocodb(val):
     """Normalise NocoDB tags value to a comma-separated string for the API response."""
