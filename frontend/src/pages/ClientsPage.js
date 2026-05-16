@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import {
   Plus, Edit2, Trash2, Mail, Phone, Building, User,
-  LayoutGrid, List, Search, X, ChevronUp, ChevronDown, ArrowUpDown, Globe,
+  LayoutGrid, List, Search, X, ChevronUp, ChevronDown, ArrowUpDown, Globe, Filter,
 } from 'lucide-react';
 import { toastMsg } from '../utils/errorLogger';
 
@@ -151,6 +151,7 @@ export default function ClientsPage() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortKey, setSortKey]             = useState('name');
   const [sortDir, setSortDir]             = useState('asc');
+  const [showFilters, setShowFilters]     = useState(false);
 
   /* Column-level filters (list view only) */
   const [cf, setCf] = useState({ name: '', type: 'all', company: '', email: '', tags: 'all' });
@@ -307,54 +308,93 @@ export default function ClientsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="card p-4 mb-6 flex flex-col gap-3">
-        {/* Row 1: search + view toggle */}
-        <div className="flex gap-3 items-center">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search by name, email or company…" className="input-field pl-9 text-sm h-10"
-                   value={search} onChange={e => setSearch(e.target.value)} />
-            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
+      {(() => {
+        const activeFilterCount = [filterType, filterTag, filterCategory].filter(v => v !== 'all').length + (search ? 1 : 0);
+        const clearAllFilters = () => { setFilterType('all'); setFilterTag('all'); setFilterCategory('all'); setSearch(''); setSortKey('name'); setSortDir('asc'); };
+        return (
+          <div className="card p-4 mb-6">
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-1 min-w-0">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" placeholder="Search by name, email or company…" className="input-field pl-9 text-sm h-10"
+                       value={search} onChange={e => setSearch(e.target.value)} />
+                {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
+              </div>
+              {/* View toggle */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 flex-shrink-0">
+                <button onClick={() => setViewMode('board')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'board' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <LayoutGrid size={13} /> Board
+                </button>
+                <button onClick={() => setViewMode('list')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <List size={13} /> List
+                </button>
+              </div>
+              {/* Filters toggle */}
+              <button onClick={() => setShowFilters(f => !f)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex-shrink-0 ${
+                        activeFilterCount > 0
+                          ? 'bg-gray-100 border-gray-900 text-gray-900'
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900'
+                      }`}>
+                <Filter size={14} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="bg-gray-900 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+                {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {activeFilterCount > 0 && (
+                <button onClick={clearAllFilters} className="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1 flex-shrink-0">
+                  <X size={13} /> Clear
+                </button>
+              )}
+            </div>
+
+            {/* Expandable filter panel */}
+            {showFilters && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Type</label>
+                  <select className="input-field text-sm h-9" value={filterType} onChange={e => setFilterType(e.target.value)}>
+                    <option value="all">All Types</option>
+                    <option value="individual">Individual</option>
+                    <option value="business">Business</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Category</label>
+                  <select className="input-field text-sm h-9" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                    <option value="all">All Categories</option>
+                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Country</label>
+                  <select className="input-field text-sm h-9" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+                    <option value="all">All Countries</option>
+                    {COUNTRY_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Sort</label>
+                  <select className="input-field text-sm h-9" value={`${sortKey}-${sortDir}`}
+                          onChange={e => { const [k, d] = e.target.value.split('-'); setSortKey(k); setSortDir(d); }}>
+                    <option value="name-asc">Name A→Z</option>
+                    <option value="name-desc">Name Z→A</option>
+                    <option value="type-asc">Type A→Z</option>
+                    <option value="email-asc">Email A→Z</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex rounded-xl border-2 border-gray-200 overflow-hidden h-10 flex-shrink-0">
-            <button onClick={() => setViewMode('board')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-              <LayoutGrid size={14} /> Board
-            </button>
-            <button onClick={() => setViewMode('list')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-              <List size={14} /> List
-            </button>
-          </div>
-        </div>
-        {/* Row 2: filters */}
-        <div className="flex flex-wrap gap-2">
-          <select className="input-field text-sm h-9 w-36" value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="all">All Types</option>
-            <option value="individual">Individual</option>
-            <option value="business">Business</option>
-          </select>
-          <select className="input-field text-sm h-9 w-36" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-            <option value="all">All Categories</option>
-            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <select className="input-field text-sm h-9 w-40" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
-            <option value="all">All Countries</option>
-            {COUNTRY_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select className="input-field text-sm h-9 w-36" value={`${sortKey}-${sortDir}`}
-                  onChange={e => { const [k, d] = e.target.value.split('-'); setSortKey(k); setSortDir(d); }}>
-            <option value="name-asc">Name A→Z</option>
-            <option value="name-desc">Name Z→A</option>
-            <option value="type-asc">Type A→Z</option>
-            <option value="email-asc">Email A→Z</option>
-          </select>
-          {(filterType !== 'all' || filterTag !== 'all' || filterCategory !== 'all' || search) && (
-            <button onClick={() => { setFilterType('all'); setFilterTag('all'); setFilterCategory('all'); setSearch(''); }}
-                    className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1 px-2">
-              <X size={12} /> Clear filters
-            </button>
-          )}
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Empty state */}
       {displayed.length === 0 ? (
