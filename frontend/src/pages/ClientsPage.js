@@ -262,7 +262,7 @@ export default function ClientsPage() {
       const q = search.toLowerCase();
       if (q && !(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q)) return false;
       if (filterType     !== 'all' && getClientType(c) !== filterType) return false;
-      if (filterTag      !== 'all' && !(c.tags || '').includes(filterTag)) return false;
+      if (filterTag      !== 'all' && !(c.tags || '').split(',').map(t => t.trim()).includes(filterTag)) return false;
       if (filterCategory !== 'all' && (c.category || '') !== filterCategory) return false;
       // Column filters (list view)
       if (viewMode === 'list') {
@@ -270,7 +270,7 @@ export default function ClientsPage() {
         if (cf.type   !== 'all' && getClientType(c) !== cf.type)                                 return false;
         if (cf.company   && !(c.company  || '').toLowerCase().includes(cf.company.toLowerCase())) return false;
         if (cf.email     && !(c.email    || '').toLowerCase().includes(cf.email.toLowerCase()))   return false;
-        if (cf.tags     !== 'all' && !(c.tags     || '').includes(cf.tags))                       return false;
+        if (cf.tags !== 'all' && !(c.tags || '').split(',').map(t => t.trim()).includes(cf.tags)) return false;
         if (cf.category && cf.category !== 'all' && (c.category || '') !== cf.category)           return false;
       }
       return true;
@@ -307,41 +307,52 @@ export default function ClientsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="card p-4 mb-6 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search by name, email or company…" className="input-field pl-9 text-sm h-10"
-                 value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
+      <div className="card p-4 mb-6 flex flex-col gap-3">
+        {/* Row 1: search + view toggle */}
+        <div className="flex gap-3 items-center">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" placeholder="Search by name, email or company…" className="input-field pl-9 text-sm h-10"
+                   value={search} onChange={e => setSearch(e.target.value)} />
+            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
+          </div>
+          <div className="flex rounded-xl border-2 border-gray-200 overflow-hidden h-10 flex-shrink-0">
+            <button onClick={() => setViewMode('board')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              <LayoutGrid size={14} /> Board
+            </button>
+            <button onClick={() => setViewMode('list')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              <List size={14} /> List
+            </button>
+          </div>
         </div>
-        <select className="input-field text-sm h-10 sm:w-36" value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="all">All Types</option>
-          <option value="individual">Individual</option>
-          <option value="business">Business</option>
-        </select>
-        <select className="input-field text-sm h-10 sm:w-36" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-          <option value="all">All Categories</option>
-          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-        <select className="input-field text-sm h-10 sm:w-36" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
-          <option value="all">All Countries</option>
-          {COUNTRY_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select className="input-field text-sm h-10 sm:w-40" value={`${sortKey}-${sortDir}`}
-                onChange={e => { const [k, d] = e.target.value.split('-'); setSortKey(k); setSortDir(d); }}>
-          <option value="name-asc">Name A→Z</option>
-          <option value="name-desc">Name Z→A</option>
-          <option value="type-asc">Type A→Z</option>
-          <option value="email-asc">Email A→Z</option>
-        </select>
-        {/* View toggle */}
-        <div className="flex rounded-xl border-2 border-gray-200 overflow-hidden h-10 self-center flex-shrink-0">
-          <button onClick={() => setViewMode('board')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'board' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-            <LayoutGrid size={14} /> Board
-          </button>
-          <button onClick={() => setViewMode('list')} className={`px-3 flex items-center gap-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-            <List size={14} /> List
-          </button>
+        {/* Row 2: filters */}
+        <div className="flex flex-wrap gap-2">
+          <select className="input-field text-sm h-9 w-36" value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <option value="all">All Types</option>
+            <option value="individual">Individual</option>
+            <option value="business">Business</option>
+          </select>
+          <select className="input-field text-sm h-9 w-36" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+            <option value="all">All Categories</option>
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+          <select className="input-field text-sm h-9 w-40" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+            <option value="all">All Countries</option>
+            {COUNTRY_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select className="input-field text-sm h-9 w-36" value={`${sortKey}-${sortDir}`}
+                  onChange={e => { const [k, d] = e.target.value.split('-'); setSortKey(k); setSortDir(d); }}>
+            <option value="name-asc">Name A→Z</option>
+            <option value="name-desc">Name Z→A</option>
+            <option value="type-asc">Type A→Z</option>
+            <option value="email-asc">Email A→Z</option>
+          </select>
+          {(filterType !== 'all' || filterTag !== 'all' || filterCategory !== 'all' || search) && (
+            <button onClick={() => { setFilterType('all'); setFilterTag('all'); setFilterCategory('all'); setSearch(''); }}
+                    className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1 px-2">
+              <X size={12} /> Clear filters
+            </button>
+          )}
         </div>
       </div>
 
