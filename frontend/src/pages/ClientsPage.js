@@ -234,28 +234,22 @@ export default function ClientsPage() {
     };
     try {
       if (editingClient) {
-        await axios.put(`${API}/clients/${editingClient.Id}`, payload, getAuthHeaders());
-        toast.success('Client updated');
+        const res = await axios.put(`${API}/clients/${editingClient.Id}`, payload, getAuthHeaders());
+        const saved = res.data || {};
+        // Update local state with what NocoDB actually stored
+        setClients(prev => prev.map(c => c.Id === editingClient.Id ? { ...c, ...saved } : c));
+        if (tagsStr && !saved.tags) {
+          toast.error('Country was not saved. Make sure the "tags" field in NocoDB clients table is type "Single line text" (not Multi-select or Tags).', { duration: 10000 });
+        } else {
+          toast.success('Client updated');
+        }
       } else {
-        await axios.post(`${API}/clients`, payload, getAuthHeaders());
+        const res = await axios.post(`${API}/clients`, payload, getAuthHeaders());
         toast.success('Client created');
+        // Full refetch needed for new client to get NocoDB Id
+        fetchClients();
       }
       setShowModal(false);
-
-      // Fetch fresh list and verify tags were actually persisted in NocoDB
-      const freshRes = await axios.get(`${API}/clients`, getAuthHeaders());
-      const freshClients = Array.isArray(freshRes.data) ? freshRes.data : [];
-      setClients(freshClients);
-
-      if (tagsStr && editingClient) {
-        const persisted = freshClients.find(c => String(c.Id) === String(editingClient.Id));
-        if (persisted && !persisted.tags) {
-          toast.error(
-            'Country was not saved — the "tags" field is missing from your NocoDB clients table. Add it as a Single line text field, then save again.',
-            { duration: 12000 }
-          );
-        }
-      }
     } catch (err) {
       toast.error(await toastMsg('ClientsPage.save', err, err.response?.data?.error || 'Failed to save'));
     }

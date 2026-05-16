@@ -242,7 +242,28 @@ def get_clients():
     if assigned is not None:
         clients = [c for c in clients if str(c.get('Id', '')) in assigned]
 
+    # Normalise tags field (NocoDB Tags type returns array; convert to string)
+    for c in clients:
+        c['tags'] = _tags_from_nocodb(c.get('tags'))
+
     return jsonify(clients)
+
+def _tags_for_nocodb(raw):
+    """Convert comma-separated string to list for NocoDB.
+    NocoDB Tags (multi-select) field requires an array; Text field also accepts it."""
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return raw
+    return [t.strip() for t in str(raw).split(',') if t.strip()]
+
+def _tags_from_nocodb(val):
+    """Normalise NocoDB tags value to a comma-separated string for the API response."""
+    if not val:
+        return ''
+    if isinstance(val, list):
+        return ', '.join(str(v) for v in val if v)
+    return str(val)
 
 @app.route('/api/clients', methods=['POST'])
 def create_client():
@@ -261,29 +282,47 @@ def create_client():
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
-        "tags": data.get('tags', ''), "notes": data.get('notes'),
+        "tags": _tags_for_nocodb(data.get('tags', '')),
+        "notes": data.get('notes'),
         "category": data.get('category', ''),
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     if result is None:
         return jsonify({"error": "Failed to create client. Check database configuration."}), 500
-    return jsonify({"id": client_id, **data})
+    # Read back actual saved record so frontend knows what NocoDB stored
+    nocodb_id = result.get('Id')
+    if nocodb_id:
+        saved = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                       params={"where": f"(Id,eq,{nocodb_id})", "limit": 1})
+        if saved and saved.get('list'):
+            rec = saved['list'][0]
+            rec['tags'] = _tags_from_nocodb(rec.get('tags'))
+            return jsonify(rec), 201
+    return jsonify({"id": client_id, **data}), 201
 
 @app.route('/api/clients/<client_id>', methods=['PUT'])
 def update_client(client_id):
     user, error, code = get_token()
     if error:
         return error, code
-    
+
     data = request.get_json()
     nc_patch(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {
         "Id": int(client_id), "name": data.get('name'), "email": data.get('email'),
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
-        "tags": data.get('tags', ''), "notes": data.get('notes'),
+        "tags": _tags_for_nocodb(data.get('tags', '')),
+        "notes": data.get('notes'),
         "category": data.get('category', '')
     })
+    # Read back actual saved record so frontend knows what NocoDB stored
+    saved = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                   params={"where": f"(Id,eq,{client_id})", "limit": 1})
+    if saved and saved.get('list'):
+        rec = saved['list'][0]
+        rec['tags'] = _tags_from_nocodb(rec.get('tags'))
+        return jsonify(rec)
     return jsonify({"id": client_id, **data})
 
 @app.route('/api/clients/<client_id>', methods=['DELETE'])
