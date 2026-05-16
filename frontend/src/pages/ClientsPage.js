@@ -238,11 +238,7 @@ export default function ClientsPage() {
         const saved = res.data || {};
         // Update local state with what NocoDB actually stored
         setClients(prev => prev.map(c => c.Id === editingClient.Id ? { ...c, ...saved } : c));
-        if (tagsStr && !saved.tags) {
-          toast.error('Country was not saved. Make sure the "tags" field in NocoDB clients table is type "Single line text" (not Multi-select or Tags).', { duration: 10000 });
-        } else {
-          toast.success('Client updated');
-        }
+        toast.success('Client updated');
       } else {
         const res = await axios.post(`${API}/clients`, payload, getAuthHeaders());
         toast.success('Client created');

@@ -242,27 +242,30 @@ def get_clients():
     if assigned is not None:
         clients = [c for c in clients if str(c.get('Id', '')) in assigned]
 
-    # Normalise tags field (NocoDB Tags type returns array; convert to string)
     for c in clients:
-        c['tags'] = _tags_from_nocodb(c.get('tags'))
+        c['tags'] = _extract_tags(c)
 
     return jsonify(clients)
 
-def _tags_for_nocodb(raw):
-    """Return a plain comma-separated string for NocoDB Single line text field."""
+def _tags_str(raw):
+    """Convert any tags format to a plain comma-separated string."""
     if not raw:
         return ''
     if isinstance(raw, list):
         return ', '.join(str(v) for v in raw if v)
     return str(raw)
 
-def _tags_from_nocodb(val):
-    """Normalise NocoDB tags value to a comma-separated string for the API response."""
-    if not val:
-        return ''
-    if isinstance(val, list):
-        return ', '.join(str(v) for v in val if v)
-    return str(val)
+def _extract_tags(rec):
+    """Read tags from a NocoDB record regardless of field name case (tags / Tags / TAGS)."""
+    for key in rec.keys():
+        if key.lower() == 'tags':
+            return _tags_str(rec[key])
+    return ''
+
+def _tags_patch(raw):
+    """Return tags fields for PATCH body — send under all common casings so NocoDB matches whichever exists."""
+    val = _tags_str(raw)
+    return {'tags': val, 'Tags': val}
 
 @app.route('/api/clients', methods=['POST'])
 def create_client():
@@ -281,7 +284,7 @@ def create_client():
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
-        "tags": _tags_for_nocodb(data.get('tags', '')),
+        **_tags_patch(data.get('tags', '')),
         "notes": data.get('notes'),
         "category": data.get('category', ''),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -295,7 +298,7 @@ def create_client():
                        params={"where": f"(Id,eq,{nocodb_id})", "limit": 1})
         if saved and saved.get('list'):
             rec = saved['list'][0]
-            rec['tags'] = _tags_from_nocodb(rec.get('tags'))
+            rec['tags'] = _extract_tags(rec)
             return jsonify(rec), 201
     return jsonify({"id": client_id, **data}), 201
 
@@ -311,7 +314,7 @@ def update_client(client_id):
         "phone": data.get('phone'), "phone_code": data.get('phone_code', ''),
         "company": data.get('company'), "type": data.get('type', 'individual'),
         "doing_business_as": data.get('doing_business_as', ''),
-        "tags": _tags_for_nocodb(data.get('tags', '')),
+        **_tags_patch(data.get('tags', '')),
         "notes": data.get('notes'),
         "category": data.get('category', '')
     })
@@ -320,7 +323,7 @@ def update_client(client_id):
                    params={"where": f"(Id,eq,{client_id})", "limit": 1})
     if saved and saved.get('list'):
         rec = saved['list'][0]
-        rec['tags'] = _tags_from_nocodb(rec.get('tags'))
+        rec['tags'] = _extract_tags(rec)
         return jsonify(rec)
     return jsonify({"id": client_id, **data})
 
@@ -332,6 +335,18 @@ def delete_client(client_id):
 
     nc_delete(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records", {"Id": int(client_id)})
     return jsonify({"message": "Client deleted"})
+
+@app.route('/api/clients/fields', methods=['GET'])
+def get_client_fields():
+    """Returns the exact field names NocoDB uses for the clients table — for debugging."""
+    user, error, code = get_token()
+    if error:
+        return error, code
+    result = nc_get(f"/api/v2/tables/{NOCODB_TABLE_CLIENTS}/records",
+                    params={"where": f"(organization_id,eq,{user['organization_id']})", "limit": 1})
+    if result and result.get('list'):
+        return jsonify({"fields": list(result['list'][0].keys())})
+    return jsonify({"fields": [], "message": "No clients found — add one first"})
 
 @app.route('/api/clients/upload-excel', methods=['POST'])
 def upload_excel():
