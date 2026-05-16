@@ -151,6 +151,11 @@ export default function ClientServicesPage() {
   const [feesMenu, setFeesMenu]           = useState(null);
   const fileInputRef                      = useRef(null);
 
+  /* Bulk selection */
+  const [selectedIds, setSelectedIds]     = useState(new Set());
+  const [bulkFields, setBulkFields]       = useState({ status: '', assignee: '', fees_status: '' });
+  const [bulkApplying, setBulkApplying]   = useState(false);
+
   /* Log-time popup */
   const [logTimeData, setLogTimeData] = useState(null);
   const [logMins, setLogMins]         = useState('');
@@ -319,6 +324,67 @@ export default function ClientServicesPage() {
       ));
       if (shouldArchive) toast.success(`Archived: ${rec.service_category} for ${rec.client_name}`);
     } catch { toast.error('Failed to update fees status'); }
+  };
+
+  /* ── Bulk selection helpers ───────────────────────────────────── */
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(r => r.Id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setBulkFields({ status: '', assignee: '', fees_status: '' });
+  };
+
+  const handleBulkApply = async () => {
+    if (selectedIds.size === 0) return;
+    const hasChanges = bulkFields.status || bulkFields.assignee || bulkFields.fees_status;
+    if (!hasChanges) { toast.error('Set at least one field to update'); return; }
+
+    setBulkApplying(true);
+    let updated = 0;
+    try {
+      const ids = [...selectedIds];
+      await Promise.all(ids.map(async (id) => {
+        const rec = records.find(r => r.Id === id);
+        if (!rec) return;
+        const patch = { ...rec };
+        if (bulkFields.status)      patch.status      = bulkFields.status;
+        if (bulkFields.assignee)    patch.assignee    = bulkFields.assignee;
+        if (bulkFields.fees_status) patch.fees_status = bulkFields.fees_status;
+        // Archive if Done + Post Payment
+        if (patch.status === 'Done' && patch.fees_status === 'Post Payment') patch.archived = true;
+        await axios.put(`${API}/client-services/${id}`, patch, getAuthHeaders());
+        updated++;
+      }));
+      setRecords(prev => prev.map(r => {
+        if (!selectedIds.has(r.Id)) return r;
+        const updated = { ...r };
+        if (bulkFields.status)      updated.status      = bulkFields.status;
+        if (bulkFields.assignee)    updated.assignee    = bulkFields.assignee;
+        if (bulkFields.fees_status) updated.fees_status = bulkFields.fees_status;
+        if (updated.status === 'Done' && updated.fees_status === 'Post Payment') updated.archived = true;
+        return updated;
+      }));
+      toast.success(`Updated ${updated} service${updated !== 1 ? 's' : ''}`);
+      clearSelection();
+    } catch (err) {
+      toast.error('Some updates failed — please retry');
+    } finally {
+      setBulkApplying(false);
+    }
   };
 
   /* ── EXCEL IMPORT ─────────────────────────────────────────────── */
@@ -568,7 +634,7 @@ export default function ClientServicesPage() {
 
       {/* Active / Archived tabs */}
       <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit">
-        <button onClick={() => setActiveTab('active')}
+        <button onClick={() => { setActiveTab('active'); clearSelection(); }}}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   activeTab === 'active' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}>
@@ -577,7 +643,7 @@ export default function ClientServicesPage() {
             {activeCount}
           </span>
         </button>
-        <button onClick={() => setActiveTab('archived')}
+        <button onClick={() => { setActiveTab('archived'); clearSelection(); }}}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   activeTab === 'archived' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}>
@@ -679,6 +745,46 @@ export default function ClientServicesPage() {
         )}
       </div>
 
+      {/* ── Bulk action bar ──────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div className="card p-3 mb-4 flex flex-wrap items-center gap-3 border-2 border-gray-900 bg-gray-50">
+          <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
+            {selectedIds.size} selected
+          </span>
+          <div className="flex-1 flex flex-wrap items-center gap-2">
+            {/* Status */}
+            <select value={bulkFields.status}
+                    onChange={e => setBulkFields(f => ({ ...f, status: e.target.value }))}
+                    className="input-field text-sm h-9 w-40">
+              <option value="">Status…</option>
+              {CORE_STATUSES.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+            </select>
+            {/* Assignee */}
+            <input type="text" placeholder="Assignee…"
+                   value={bulkFields.assignee}
+                   onChange={e => setBulkFields(f => ({ ...f, assignee: e.target.value }))}
+                   className="input-field text-sm h-9 w-36" />
+            {/* Fees Status */}
+            <select value={bulkFields.fees_status}
+                    onChange={e => setBulkFields(f => ({ ...f, fees_status: e.target.value }))}
+                    className="input-field text-sm h-9 w-44">
+              <option value="">Fees status…</option>
+              {FEES_STATUS_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button onClick={handleBulkApply} disabled={bulkApplying}
+                    className="btn-primary text-sm py-2 px-4">
+              {bulkApplying ? 'Applying…' : `Apply to ${selectedIds.size}`}
+            </button>
+            <button onClick={clearSelection}
+                    className="btn-outline text-sm py-2 px-3">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
       {filtered.length === 0 && (
         <div className="card p-14 text-center">
@@ -740,6 +846,18 @@ export default function ClientServicesPage() {
                   <table className="w-full text-sm border-collapse">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="pl-4 pr-2 py-2 w-8">
+                          <input type="checkbox" className="rounded border-gray-300 cursor-pointer"
+                                 checked={recs.length > 0 && recs.every(r => selectedIds.has(r.Id))}
+                                 onChange={() => {
+                                   const allSelected = recs.every(r => selectedIds.has(r.Id));
+                                   setSelectedIds(prev => {
+                                     const next = new Set(prev);
+                                     recs.forEach(r => allSelected ? next.delete(r.Id) : next.add(r.Id));
+                                     return next;
+                                   });
+                                 }} />
+                        </th>
                         {['Service','Frequency','Period','Assignee','Due Date','Status','Fees',''].map(h => (
                           <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                         ))}
@@ -747,12 +865,18 @@ export default function ClientServicesPage() {
                     </thead>
                     <tbody>
                       {recs.map((rec, ri) => {
-                        const od = checkOverdue(rec);
+                        const od         = checkOverdue(rec);
+                        const isSelected = selectedIds.has(rec.Id);
                         return (
                           <tr key={rec.Id || ri}
                               className={`group border-b border-gray-50 transition-colors ${
-                                od ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
+                                isSelected ? 'bg-gray-100' : od ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
                               }`}>
+                            <td className="pl-4 pr-2 py-3 w-8">
+                              <input type="checkbox" className="rounded border-gray-300 cursor-pointer"
+                                     checked={isSelected}
+                                     onChange={() => toggleSelect(rec.Id)} />
+                            </td>
                             <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
                               {rec.service_category || '—'}
                             </td>
@@ -811,6 +935,12 @@ export default function ClientServicesPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr style={{ backgroundColor: '#111827' }}>
+                  <th className="pl-4 pr-2 py-3 w-8">
+                    <input type="checkbox"
+                           className="rounded border-gray-600 cursor-pointer"
+                           checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                           onChange={toggleSelectAll} />
+                  </th>
                   {['Client','Service','Frequency','Period','Assignee','Due Date','Status','Fees',''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-white font-semibold whitespace-nowrap text-xs tracking-wide uppercase">{h}</th>
                   ))}
@@ -818,12 +948,18 @@ export default function ClientServicesPage() {
               </thead>
               <tbody>
                 {filtered.map((rec, i) => {
-                  const od = checkOverdue(rec);
+                  const od       = checkOverdue(rec);
+                  const isSelected = selectedIds.has(rec.Id);
                   return (
                     <tr key={rec.Id || i}
                         className={`group border-b border-gray-100 transition-colors ${
-                          od ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
+                          isSelected ? 'bg-gray-100' : od ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
                         }`}>
+                      <td className="pl-4 pr-2 py-3 w-8">
+                        <input type="checkbox" className="rounded border-gray-300 cursor-pointer"
+                               checked={isSelected}
+                               onChange={() => toggleSelect(rec.Id)} />
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold text-gray-800">{rec.client_name || '—'}</span>
