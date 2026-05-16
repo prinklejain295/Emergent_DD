@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
-import LoginPage from './pages/LoginPage';
-import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
-import ClientsPage from './pages/ClientsPage';
+import LoginPage      from './pages/LoginPage';
+import LandingPage    from './pages/LandingPage';
+import Dashboard      from './pages/Dashboard';
+import ClientsPage    from './pages/ClientsPage';
 import ClientServicesPage from './pages/ClientServicesPage';
-import LeadsPage from './pages/LeadsPage';
-import SettingsPage from './pages/SettingsPage';
-import RemindersPage from './pages/RemindersPage';
-import CalendarPage from './pages/CalendarPage';
-import TimesheetPage from './pages/TimesheetPage';
-import Layout from './components/Layout';
+import LeadsPage      from './pages/LeadsPage';
+import SettingsPage   from './pages/SettingsPage';
+import RemindersPage  from './pages/RemindersPage';
+import CalendarPage   from './pages/CalendarPage';
+import TimesheetPage  from './pages/TimesheetPage';
+import Layout         from './components/Layout';
 import './App.css';
 
 function App() {
@@ -50,34 +50,31 @@ function App() {
     setOrganization(null);
   };
 
-  /* Show blank white screen while reading localStorage — avoids flash */
-  if (loading) {
-    return <div style={{ minHeight: '100vh', background: '#fff' }} />;
-  }
+  if (loading) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
 
-  const Protected = ({ children }) =>
+  const wrap = (Page) =>
     isAuthenticated
-      ? <Layout user={user} organization={organization} onLogout={handleLogout}>{children}</Layout>
+      ? <Layout user={user} organization={organization} onLogout={handleLogout}><Page /></Layout>
       : <Navigate to="/" replace />;
 
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
       <Routes>
-        {/* Public */}
-        <Route path="/"     element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
-        <Route path="/home" element={<LandingPage />} />
+        {/* ── Public ─────────────────────────────────────────── */}
+        <Route path="/"      element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+        <Route path="/home"  element={<LandingPage />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />} />
 
-        {/* Protected */}
-        <Route path="/dashboard"       element={<Protected><Dashboard /></Protected>} />
-        <Route path="/clients"         element={<Protected><ClientsPage /></Protected>} />
-        <Route path="/client-services" element={<Protected><ClientServicesPage /></Protected>} />
-        <Route path="/settings"        element={<Protected><SettingsPage /></Protected>} />
-        <Route path="/leads"           element={<Protected><LeadsPage /></Protected>} />
-        <Route path="/reminders"       element={<Protected><RemindersPage /></Protected>} />
-        <Route path="/calendar"        element={<Protected><CalendarPage /></Protected>} />
-        <Route path="/timesheet"       element={<Protected><TimesheetPage /></Protected>} />
+        {/* ── Protected ──────────────────────────────────────── */}
+        <Route path="/dashboard"       element={wrap(Dashboard)} />
+        <Route path="/clients"         element={wrap(ClientsPage)} />
+        <Route path="/client-services" element={wrap(ClientServicesPage)} />
+        <Route path="/settings"        element={wrap(SettingsPage)} />
+        <Route path="/leads"           element={wrap(LeadsPage)} />
+        <Route path="/reminders"       element={wrap(RemindersPage)} />
+        <Route path="/calendar"        element={wrap(CalendarPage)} />
+        <Route path="/timesheet"       element={wrap(TimesheetPage)} />
       </Routes>
     </BrowserRouter>
   );
